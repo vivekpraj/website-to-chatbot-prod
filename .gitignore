@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+
+# SQLite database
+database.db
+
+# Environment variables
+.env
+.env.*
+
+# CHROMA folders (optional)
+app/data/chroma/bots/
+
+# IDE files
+.vscode/
+.idea/
+
