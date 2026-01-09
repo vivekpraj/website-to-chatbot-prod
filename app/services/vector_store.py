@@ -1,111 +1,106 @@
-import chromadb
 import os
-import logging
-import shutil  # <-- add at top
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
+from typing import List, Tuple
+import uuid
 
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 
-logger = logging.getLogger(__name__)
+# Initialize client
+if QDRANT_URL and QDRANT_API_KEY:
+    client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+else:
+    # Local mode for testing
+    client = QdrantClient(":memory:")
 
-BASE_CHROMA_DIR = "app/data/chroma/bots"
+COLLECTION_PREFIX = "bot_"
 
+def get_collection_name(bot_id: str) -> str:
+    """Get collection name for a bot"""
+    return f"{COLLECTION_PREFIX}{bot_id}"
 
-def get_chroma_client(bot_id: str):
-    """
-    Returns (and creates if needed) a persistent Chroma client for this bot.
-    Each bot gets its own Chroma directory.
-    """
-    bot_dir = os.path.join(BASE_CHROMA_DIR, bot_id)
-    os.makedirs(bot_dir, exist_ok=True)
-
-    client = chromadb.PersistentClient(path=bot_dir)
-    return client
-
-
-def get_or_create_collection(client, collection_name: str = "docs"):
-    """
-    Each bot gets one named collection in its Chroma DB.
-    """
-    collection = client.get_or_create_collection(
-        name=collection_name,
-        metadata={"hnsw:space": "cosine"},
-    )
-    return collection
-
-
-def add_chunks_to_chroma(bot_id: str, chunks: list, embeddings: list, metadatas: list):
-    """
-    Save embeddings + text chunks + metadata into Chroma for this bot.
-    """
-    if len(chunks) != len(embeddings) or len(chunks) != len(metadatas):
-        raise ValueError("chunks, embeddings, metadatas must have same length")
-
-    client = get_chroma_client(bot_id)
-    collection = get_or_create_collection(client)
-
-    ids = [f"{bot_id}_{i}" for i in range(len(chunks))]
-
-    collection.add(
-        documents=chunks,
-        embeddings=embeddings,
-        metadatas=metadatas,
-        ids=ids,
-    )
-
-    logger.info(f"Stored {len(chunks)} chunks for bot {bot_id} in Chroma.")
-    return True
-
-
-def retrieve_chunks(bot_id: str, query_vector, top_k: int = 3):
-    """
-    Query Chroma using an embedding vector.
-    Returns: (documents, metadatas)
-    """
-    client = get_chroma_client(bot_id)
-    collection = get_or_create_collection(client)
-
-    results = collection.query(
-        query_embeddings=[query_vector],
-        n_results=top_k,
-        include=["documents", "metadatas"],
-    )
-
-    docs = results.get("documents", [[]])
-    metas = results.get("metadatas", [[]])
-
-    if not docs or not docs[0]:
-        logger.warning(f"No documents found for bot {bot_id} in Chroma.")
-        return [], []
-
-    return docs[0], metas[0]
-
-def reset_chroma_for_bot(bot_id: str):
-    """
-    Logically reset Chroma for this bot by deleting all collections
-    in its persistent directory (instead of deleting files on disk).
-
-    This avoids PermissionError on Windows when files are locked.
-    """
-    bot_dir = os.path.join(BASE_CHROMA_DIR, bot_id)
-
-    if not os.path.exists(bot_dir):
-        logger.info(f"No existing Chroma directory for bot {bot_id}, nothing to reset.")
-        return
-
+def init_collection(bot_id: str, vector_size: int = 384):
+    """Initialize collection if it doesn't exist"""
+    collection_name = get_collection_name(bot_id)
+    
     try:
-        # Open the existing Chroma client at this path
-        client = chromadb.PersistentClient(path=bot_dir)
+        client.get_collection(collection_name)
+        print(f"Collection {collection_name} already exists")
+    except:
+        client.create_collection(
+            collection_name=collection_name,
+            vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE)
+        )
+        print(f"Created collection {collection_name}")
 
-        # Delete all collections associated with this bot
-        collections = client.list_collections()
-        if not collections:
-            logger.info(f"No collections found for bot {bot_id} in {bot_dir}.")
-            return
+def add_chunks_to_qdrant(
+    bot_id: str,
+    texts: List[str],
+    embeddings: List[List[float]],
+    metadatas: List[dict]
+):
+    """Add chunks with embeddings to Qdrant"""
+    
+    # Detect vector size from first embedding
+    vector_size = len(embeddings[0])
+    init_collection(bot_id, vector_size)
+    
+    collection_name = get_collection_name(bot_id)
+    
+    points = [
+        PointStruct(
+            id=str(uuid.uuid4()),
+            vector=embedding,
+            payload={
+                "text": text,
+                **metadata
+            }
+        )
+        for text, embedding, metadata in zip(texts, embeddings, metadatas)
+    ]
+    
+    client.upsert(
+        collection_name=collection_name,
+        points=points
+    )
+    
+    print(f"✅ Added {len(points)} chunks to {collection_name}")
 
-        for coll in collections:
-            logger.info(f"Deleting Chroma collection '{coll.name}' for bot {bot_id}")
-            client.delete_collection(name=coll.name)
+def retrieve_chunks(
+    bot_id: str,
+    query_vector: List[float],
+    top_k: int = 5
+) -> Tuple[List[str], List[dict]]:
+    """Search for similar chunks"""
+    
+    collection_name = get_collection_name(bot_id)
+    
+    # Use query_points instead of search
+    search_result = client.query_points(
+        collection_name=collection_name,
+        query=query_vector,
+        limit=top_k
+    )
+    
+    chunks = []
+    metadatas = []
+    
+    for point in search_result.points:
+        chunks.append(point.payload.get("text", ""))
+        
+        # Extract metadata (everything except 'text')
+        metadata = {k: v for k, v in point.payload.items() if k != "text"}
+        metadatas.append(metadata)
+    
+    return chunks, metadatas
 
-        logger.info(f"Successfully cleared Chroma collections for bot {bot_id} in {bot_dir}")
-
+def delete_collection(bot_id: str):
+    """Delete a bot's collection"""
+    collection_name = get_collection_name(bot_id)
+    
+    try:
+        client.delete_collection(collection_name)
+        print(f"✅ Deleted collection {collection_name}")
     except Exception as e:
-        logger.exception(f"Failed to reset Chroma for bot {bot_id}: {e}")
+        print(f"⚠️ Could not delete {collection_name}: {e}")

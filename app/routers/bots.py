@@ -10,7 +10,7 @@ from app import models, schemas
 from app.services.crawler import crawl_website
 from app.services.text_processing import process_text_to_chunks
 from app.services.embeddings import embed_text
-from app.services.vector_store import add_chunks_to_chroma, reset_chroma_for_bot
+from app.services.vector_store import add_chunks_to_qdrant, reset_chroma_for_bot
 from app.routers.auth import get_current_user  # 👈 use this for auth
 
 router = APIRouter()
@@ -126,7 +126,7 @@ def create_bot(
 
         # 3️⃣ STORE IN CHROMA
         logger.info(f"Saving {len(all_chunks)} chunks into Chroma for bot {bot_id}")
-        add_chunks_to_chroma(bot_id, all_chunks, all_embeddings, all_metadatas)
+        add_chunks_to_qdrant(bot_id, all_chunks, all_embeddings, all_metadatas)
 
         # 4️⃣ MARK BOT READY
         new_bot.status = "ready"
@@ -228,7 +228,7 @@ def refresh_bot(
         if not all_chunks:
             raise Exception("No chunks created during refresh for this website.")
 
-        add_chunks_to_chroma(bot_id, all_chunks, all_embeddings, all_metadatas)
+        add_chunks_to_qdrant(bot_id, all_chunks, all_embeddings, all_metadatas)
 
         bot.status = "ready"
         db.commit()
