@@ -10,7 +10,7 @@ from app import models, schemas
 from app.services.crawler import crawl_website
 from app.services.text_processing import process_text_to_chunks
 from app.services.embeddings import embed_text
-from app.services.vector_store import add_chunks_to_qdrant, reset_chroma_for_bot
+from app.services.vector_store import add_chunks_to_qdrant, delete_collection
 from app.routers.auth import get_current_user  # 👈 use this for auth
 
 router = APIRouter()
@@ -189,8 +189,8 @@ def refresh_bot(
     db.refresh(bot)
 
     try:
-        # 3️⃣ Clear existing Chroma index
-        reset_chroma_for_bot(bot_id)
+        # 3️⃣ Clear existing Qdrant collection
+        delete_collection(bot_id)
 
         # 4️⃣ Crawl website again
         page_texts = crawl_website(website_url, max_pages=10)

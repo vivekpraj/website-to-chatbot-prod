@@ -1,11 +1,19 @@
+
+
 import os
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from typing import List, Tuple
 import uuid
+from dotenv import load_dotenv
+load_dotenv()
+
 
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
+print("QDRANT_URL =", QDRANT_URL)
+print("QDRANT_API_KEY =", "SET" if QDRANT_API_KEY else "NOT SET")
 
 # Initialize client
 if QDRANT_URL and QDRANT_API_KEY:

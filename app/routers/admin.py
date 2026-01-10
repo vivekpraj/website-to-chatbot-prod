@@ -8,7 +8,7 @@ from sqlalchemy import func
 from app.db import get_db
 from app import models, schemas
 from app.routers.auth import get_current_user
-from app.services.vector_store import reset_chroma_for_bot
+from app.services.vector_store import delete_collection
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ def admin_delete_bot(
         raise HTTPException(status_code=404, detail="Bot not found")
 
     # delete vector store folder
-    reset_chroma_for_bot(bot_id)
+    delete_collection(bot_id)
 
     db.delete(bot)
     db.commit()
@@ -176,7 +176,7 @@ def admin_delete_user(
 
     # Optionally: delete each bot's Chroma
     for bot in user.bots:
-        reset_chroma_for_bot(bot.bot_id)
+        delete_collection(bot.bot_id)
 
     db.delete(user)
     db.commit()
