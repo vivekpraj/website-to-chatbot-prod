@@ -30,7 +30,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # frontend
+    allow_origins=["http://localhost:3000","https://website-to-chatbot-prod.vercel.app/"],  # frontend
     allow_credentials=True,
     allow_methods=["*"],  # includes OPTIONS
     allow_headers=["*"],
