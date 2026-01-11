@@ -6,7 +6,13 @@ export async function apiRequest(
 ) {
   const token = localStorage.getItem("access_token");
 
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+  // Remove leading slash from endpoint if present
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  
+  // Ensure API_BASE_URL doesn't end with slash and endpoint doesn't start with slash
+  const url = `${API_BASE_URL}/${cleanEndpoint}`;
+
+  const res = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
