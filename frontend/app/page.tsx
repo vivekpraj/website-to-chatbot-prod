@@ -157,3 +157,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+// Updated: Jan 12, 2026
