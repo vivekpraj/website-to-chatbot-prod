@@ -28,7 +28,7 @@ export default function ChatPage() {
     setError("");
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/chat/${botId}`, {
+      const res = await fetch(`${API_BASE_URL}/chat/${botId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
