@@ -13,7 +13,7 @@ from app.services.embeddings import embed_text
 from app.services.rag import build_rag_prompt
 from app.services.ai_client import generate_answer
 from app.services.vector_store import retrieve_chunks
-from app.services.ai_client import GeminiQuotaError
+from app.services.ai_client import AIQuotaError
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ def chat_with_bot(
     # 5️⃣ Generate final answer
     try:
         answer = generate_answer(prompt)
-    except GeminiQuotaError:
+    except AIQuotaError:
         raise HTTPException(
             status_code=429,
             detail="AI service is temporarily unavailable. Please try again later.",
