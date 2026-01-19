@@ -1,39 +1,66 @@
 import os
 import logging
-from google import genai
-from google.genai.errors import ClientError
+import requests
+import json
 
 logger = logging.getLogger(__name__)
 
-class GeminiQuotaError(Exception):
+class AIQuotaError(Exception):
     pass
 
 # Get API key - works in both local and CI environments
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "dummy-key")
-
-# Initialize client
-try:
-    client = genai.Client(api_key=GEMINI_API_KEY)
-except Exception as e:
-    logger.warning(f"Could not initialize Gemini client: {e}")
-    client = None
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "dummy-key")
+SITE_URL = os.getenv("SITE_URL", "https://website-to-chatbot-prod.onrender.com")
+SITE_NAME = os.getenv("SITE_NAME", "CustomBot")
 
 def generate_answer(prompt: str) -> str:
     """
-    Sends prompt to Gemini 2.0 Flash using new google-genai SDK.
+    Sends prompt to Google Gemma via OpenRouter (free tier).
     """
-    if not client or GEMINI_API_KEY == "dummy-key":
-        raise Exception("GEMINI_API_KEY not configured properly")
+    if OPENROUTER_API_KEY == "dummy-key":
+        raise Exception("OPENROUTER_API_KEY not configured properly")
     
     try:
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": SITE_URL,
+                "X-Title": SITE_NAME,
+            },
+            data=json.dumps({
+                "model": "google/gemini-flash-1.5-8b-exp",  # Free model
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            }),
+            timeout=30
         )
-        return response.text
-    except ClientError as e:
-        logger.error(f"Gemini quota error: {e}")
-        raise GeminiQuotaError("AI service quota exceeded")
+        
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract the response text
+        if "choices" in result and len(result["choices"]) > 0:
+            return result["choices"][0]["message"]["content"]
+        else:
+            logger.error(f"Unexpected OpenRouter response: {result}")
+            raise Exception("Invalid response from OpenRouter")
+            
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 429:
+            logger.error(f"OpenRouter quota error: {e}")
+            raise AIQuotaError("AI service quota exceeded")
+        else:
+            logger.error(f"OpenRouter HTTP error: {e}")
+            raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"OpenRouter request error: {e}")
+        raise
     except Exception as e:
-        logger.error(f"Gemini error: {e}")
+        logger.error(f"OpenRouter error: {e}")
         raise
