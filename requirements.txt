@@ -7,7 +7,6 @@ httpx
 beautifulsoup4
 
 qdrant-client
-google-genai
 requests
 
 python-multipart
