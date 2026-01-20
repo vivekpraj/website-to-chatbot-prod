@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { API_BASE_URL } from "@/lib/constants";
+import { removeToken } from "@/lib/auth"; // Add this import
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -36,6 +37,9 @@ export default function RegisterPage() {
         setError(data.detail || "Registration failed");
         return;
       }
+      
+      removeToken();
+
 
       setSuccess("Registration successful! You can now log in.");
       setEmail("");
