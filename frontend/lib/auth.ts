@@ -13,6 +13,12 @@ export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+export function removeToken() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("access_token");
+  }
+}
+
 export function logout() {
   if (typeof window !== "undefined") {
     localStorage.removeItem(TOKEN_KEY);
