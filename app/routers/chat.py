@@ -2,6 +2,8 @@ import logging
 import time
 import json
 from datetime import datetime
+from fastapi import Request
+import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -23,6 +25,7 @@ logger = logging.getLogger(__name__)
 def chat_with_bot(
     bot_id: str,
     payload: schemas.ChatRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
@@ -45,6 +48,32 @@ def chat_with_bot(
         raise HTTPException(status_code=404, detail="Bot not found")
     if bot.status != "ready":
         raise HTTPException(status_code=400, detail=f"Bot status is {bot.status}")
+    
+     # ✅ NEW: Check question limit per session
+    # Create session ID from IP + bot_id
+    import hashlib
+    client_ip = request.client.host
+    session_id = hashlib.md5(f"{client_ip}_{bot_id}".encode()).hexdigest()
+    
+    # Count messages from this session
+    message_count = (
+        db.query(models.ChatLog)
+        .filter(
+            models.ChatLog.bot_id == bot.id,
+            models.ChatLog.session_id == session_id
+        )
+        .count()
+    )
+    
+    if message_count >= 10:
+        logger.warning(
+            f"Session {session_id} has reached question limit ({message_count}/10) for bot {bot_id}"
+        )
+        raise HTTPException(
+            status_code=429,
+            detail="You've reached your 10 question limit. Upgrade for unlimited questions!"
+        )
+
 
     # 2️⃣ Embed user question
     query_vec = embed_text([payload.message])[0]

@@ -1,13 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  getToken,
-  getUserRole,
-  logout,
-} from "@/lib/auth";
+import { getToken, getUserRole, logout } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/constants";
 import Link from "next/link";
+import { Bot, Plus, Globe, ExternalLink, Loader, CheckCircle, Clock, AlertCircle, LogOut, Users, LayoutDashboard } from "lucide-react";
 
 type Bot = {
   bot_id: string;
@@ -27,9 +24,6 @@ export default function DashboardPage() {
 
   const [role, setRole] = useState<string | null>(null);
 
-  // ---------------------------------------
-  // AUTH + ROLE CHECK
-  // ---------------------------------------
   useEffect(() => {
     const token = getToken();
     if (!token) {
@@ -61,9 +55,6 @@ export default function DashboardPage() {
     fetchBots();
   }, []);
 
-  // ---------------------------------------
-  // CREATE BOT (CLIENT)
-  // ---------------------------------------
   async function handleCreateBot(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -100,154 +91,222 @@ export default function DashboardPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-10">
-      <div className="max-w-2xl mx-auto bg-white p-6 rounded shadow">
+  const getStatusIcon = (status: string) => {
+    if (status === "ready") return <CheckCircle className="w-4 h-4 text-green-400" />;
+    if (status === "processing") return <Clock className="w-4 h-4 text-yellow-400" />;
+    return <AlertCircle className="w-4 h-4 text-red-400" />;
+  };
 
-        {/* HEADER */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+  const getStatusColor = (status: string) => {
+    if (status === "ready") return "text-green-400 bg-green-500/10 border-green-500/20";
+    if (status === "processing") return "text-yellow-400 bg-yellow-500/10 border-yellow-500/20";
+    return "text-red-400 bg-red-500/10 border-red-500/20";
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Animated background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-black to-orange-900/20 pointer-events-none" />
+      <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse delay-700" />
+
+      {/* Header */}
+      <header className="relative border-b border-white/10 bg-black/50 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-orange-500 rounded-xl flex items-center justify-center">
+              <Bot className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent">
+              CustomBot
+            </span>
+          </div>
           <button
             onClick={logout}
-            className="text-sm text-red-600 underline"
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition"
           >
+            <LogOut className="w-4 h-4" />
             Logout
           </button>
         </div>
+      </header>
 
-        {/* ROLE INFO */}
-        <p className="text-sm text-gray-500 mb-6">
-          Logged in as: <strong>{role}</strong>
-        </p>
-
-        {/* ================= CLIENT UI ================= */}
-        {role === "client" && (
-          <>
-            <h2 className="text-lg font-semibold mb-3">
-              Create New Bot
-            </h2>
-
-            <form onSubmit={handleCreateBot}>
-              <input
-                type="url"
-                placeholder="Enter website URL"
-                className="w-full border p-2 mb-3"
-                value={websiteUrl}
-                onChange={(e) => setWebsiteUrl(e.target.value)}
-                required
-              />
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-black text-white py-2"
-              >
-                {loading ? "Creating bot..." : "Create Bot"}
-              </button>
-            </form>
-
-            {message && (
-              <p className="text-green-600 text-sm mt-3">
-                {message}
-              </p>
-            )}
-
-            {error && (
-              <p className="text-red-600 text-sm mt-3">
-                {error}
-              </p>
-            )}
-          </>
-        )}
-
-        {/* ================= BOT LIST ================= */}
-        <hr className="my-6" />
-
-        <h2 className="text-lg font-semibold mb-3">
-          Your Bots
-        </h2>
-
-        {loadingBots && (
-          <p className="text-sm text-gray-500">
-            Loading bots...
+      {/* Main Content */}
+      <main className="relative max-w-7xl mx-auto px-6 py-12">
+        {/* Welcome Section */}
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
+          <p className="text-gray-400 flex items-center gap-2">
+            Logged in as <span className="text-purple-400 font-medium">{role}</span>
           </p>
-        )}
-
-        {!loadingBots && bots.length === 0 && (
-          <p className="text-sm text-gray-500">
-            No bots created yet.
-          </p>
-        )}
-
-        <div className="space-y-3">
-          {bots.map((bot) => {
-            const chatUrl = `${window.location.origin}/chat/${bot.bot_id}`;
-
-            return (
-              <div
-                key={bot.bot_id}
-                className="border p-3 rounded bg-gray-50"
-              >
-                <p className="text-sm">
-                  <strong>Website:</strong> {bot.website_url}
-                </p>
-
-                <p className="text-sm">
-                  <strong>Status:</strong>{" "}
-                  <span
-                    className={
-                      bot.status === "ready"
-                        ? "text-green-600"
-                        : bot.status === "processing"
-                        ? "text-yellow-600"
-                        : "text-red-600"
-                    }
-                  >
-                    {bot.status}
-                  </span>
-                </p>
-
-                <p className="text-xs break-all">
-                  <strong>Chat URL:</strong>{" "}
-                  <a
-                    href={chatUrl}
-                    target="_blank"
-                    className="text-blue-600 underline"
-                  >
-                    {chatUrl}
-                  </a>
-                </p>
-              </div>
-            );
-          })}
         </div>
 
-        {/* ================= SUPER ADMIN UI ================= */}
+        {/* Create Bot Section - Only for clients */}
+        {role === "client" && (
+          <div className="mb-12">
+            <div className="bg-gradient-to-br from-purple-900/20 to-orange-900/20 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center border border-purple-500/20">
+                  <Plus className="w-6 h-6 text-purple-400" />
+                </div>
+                <h2 className="text-2xl font-bold">Create New Bot</h2>
+              </div>
+
+              {message && (
+                <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-xl mb-4 backdrop-blur-sm">
+                  {message}
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-4 backdrop-blur-sm">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleCreateBot} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Website URL
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                    <Globe className="w-3 h-3" />
+                    Enter the website you want to create a chatbot for
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-purple-600 to-orange-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader className="w-5 h-5 animate-spin" />
+                      Creating Bot...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5" />
+                      Create Bot
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Bots List */}
+        <div>
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <LayoutDashboard className="w-6 h-6 text-purple-400" />
+            Your Bots
+          </h2>
+
+          {loadingBots && (
+            <div className="text-center py-12">
+              <Loader className="w-8 h-8 animate-spin text-purple-400 mx-auto mb-4" />
+              <p className="text-gray-400">Loading bots...</p>
+            </div>
+          )}
+
+          {!loadingBots && bots.length === 0 && (
+            <div className="bg-gradient-to-br from-purple-900/20 to-orange-900/20 backdrop-blur-xl border border-white/10 rounded-3xl p-12 text-center">
+              <Bot className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-gray-400">No bots yet</h3>
+              <p className="text-gray-500">Create your first bot to get started!</p>
+            </div>
+          )}
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {bots.map((bot) => {
+              const chatUrl = `${window.location.origin}/chat/${bot.bot_id}`;
+
+              return (
+                <div
+                  key={bot.bot_id}
+                  className="group bg-gradient-to-br from-purple-900/20 to-orange-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-purple-500/50 transition-all hover:scale-[1.02]"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-orange-500/20 rounded-xl flex items-center justify-center border border-purple-500/20">
+                        <Bot className="w-6 h-6 text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-white">Website Bot</h3>
+                        <p className="text-xs text-gray-500">{new Date(bot.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(bot.status)}`}>
+                      {getStatusIcon(bot.status)}
+                      {bot.status}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Website</p>
+                      <p className="text-sm text-gray-300 truncate">{bot.website_url}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Chat URL</p>
+                      <a
+                        href={chatUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 group/link"
+                      >
+                        <span className="truncate">{chatUrl}</span>
+                        <ExternalLink className="w-3 h-3 flex-shrink-0 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Admin Controls */}
         {role === "super_admin" && (
-          <>
-            <hr className="my-6" />
-            <h2 className="text-lg font-semibold mb-3">
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <Users className="w-6 h-6 text-orange-400" />
               Admin Controls
             </h2>
 
-            <div className="space-y-2">
-  <Link
-    href="/admin/users"
-    className="block w-full text-center border py-2 hover:bg-gray-50"
-  >
-    View All Users
-  </Link>
+            <div className="grid md:grid-cols-2 gap-6">
+              <Link
+                href="/admin/users"
+                className="group bg-gradient-to-br from-purple-900/20 to-purple-600/10 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 hover:border-purple-500/50 transition-all hover:scale-[1.02]"
+              >
+                <Users className="w-8 h-8 text-purple-400 mb-3" />
+                <h3 className="text-xl font-bold mb-2">View All Users</h3>
+                <p className="text-sm text-gray-400">Manage user accounts and permissions</p>
+              </Link>
 
-  <Link
-    href="/admin/bots"
-    className="block w-full text-center border py-2 hover:bg-gray-50"
-  >
-    View All Bots
-  </Link>
-</div>
-          </>
+              <Link
+                href="/admin/bots"
+                className="group bg-gradient-to-br from-orange-900/20 to-orange-600/10 backdrop-blur-xl border border-orange-500/20 rounded-2xl p-6 hover:border-orange-500/50 transition-all hover:scale-[1.02]"
+              >
+                <Bot className="w-8 h-8 text-orange-400 mb-3" />
+                <h3 className="text-xl font-bold mb-2">View All Bots</h3>
+                <p className="text-sm text-gray-400">Monitor all chatbots in the system</p>
+              </Link>
+            </div>
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
