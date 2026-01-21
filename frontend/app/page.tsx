@@ -63,8 +63,7 @@ export default function LandingPage() {
             
             <p className="text-xl text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed">
               Transform any website into an intelligent AI chatbot in minutes. 
-              AI-powered chatbots trained on your website content, ready to engage visitors 24/7. 
-              That's CustomBot.
+              Instant answers, 24/7 availability, unlimited patience. That's CustomBot.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
