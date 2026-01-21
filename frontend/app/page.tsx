@@ -53,17 +53,17 @@ export default function LandingPage() {
             
             <h1 className="text-7xl md:text-8xl font-black mb-8 leading-tight">
               <span className="bg-gradient-to-r from-white via-purple-200 to-orange-200 bg-clip-text text-transparent">
-                YOUR WEBSITE,
+                TURN YOUR CONTENT
               </span>
               <br />
               <span className="bg-gradient-to-r from-purple-400 via-orange-400 to-purple-400 bg-clip-text text-transparent">
-                YOUR AUTHORITY.
+                INTO CONVERSATIONS.
               </span>
             </h1>
             
             <p className="text-xl text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed">
               Transform any website into an intelligent AI chatbot in minutes. 
-              Keep your team connected and productive with instant, accurate responses 24/7.
+              AI-powered chatbots trained on your website content, ready to engage visitors 24/7. That's CustomBot.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -160,21 +160,21 @@ export default function LandingPage() {
               <div className="relative">
                 <h2 className="text-5xl md:text-6xl font-black mb-6">
                   <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                    GET YOUR
+                    NEVER MISS A
                   </span>
                   <br />
                   <span className="bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent">
-                    AUTHORITY
+                    CUSTOMER QUESTION
                   </span>
                 </h2>
                 <p className="text-xl text-gray-400 mb-10">
-                  Establish control and authority over your team's file-sharing with speed.
+                  Let AI handle repetitive questions while you focus on growing your business.
                 </p>
                 <a
                   href="/register"
                   className="inline-flex items-center gap-2 px-12 py-6 bg-gradient-to-r from-purple-600 to-orange-600 text-white text-lg font-bold rounded-full hover:shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all"
                 >
-                  Get Started Now
+                  Create Your Bot Now
                   <ArrowRight className="w-5 h-5" />
                 </a>
               </div>
