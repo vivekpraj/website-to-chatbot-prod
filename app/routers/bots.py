@@ -38,6 +38,22 @@ def create_bot(
         f"User {current_user.id} ({current_user.email}) requested bot for: {website_url}"
     )
 
+    # --- ✅ NEW: Check bot limit for this user ---
+    user_bot_count = (
+        db.query(models.Bot)
+        .filter(models.Bot.user_id == current_user.id)
+        .count()
+    )
+    
+    if user_bot_count >= 1:
+        logger.warning(
+            f"User {current_user.id} has reached bot limit ({user_bot_count}/1)"
+        )
+        raise HTTPException(
+            status_code=400,
+            detail="You can only create 1 bot on the free plan. Upgrade to create more bots."
+        )
+    
     # --- check for existing bot for THIS USER + URL ---
     existing_bot = (
         db.query(models.Bot)

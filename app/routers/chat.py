@@ -51,7 +51,7 @@ def chat_with_bot(
     
      # ✅ NEW: Check question limit per session
     # Create session ID from IP + bot_id
-    import hashlib
+    
     client_ip = request.client.host
     session_id = hashlib.md5(f"{client_ip}_{bot_id}".encode()).hexdigest()
     
@@ -65,13 +65,13 @@ def chat_with_bot(
         .count()
     )
     
-    if message_count >= 10:
+    if message_count >= 3:
         logger.warning(
             f"Session {session_id} has reached question limit ({message_count}/10) for bot {bot_id}"
         )
         raise HTTPException(
             status_code=429,
-            detail="You've reached your 10 question limit. Upgrade for unlimited questions!"
+            detail="You've reached your 3 question limit. Upgrade for unlimited questions!"
         )
 
 
@@ -122,7 +122,7 @@ def chat_with_bot(
 
         # Store message log (per Q/A)
         log_entry = models.ChatLog(
-            session_id=None,  # we will add real sessions later
+            session_id=session_id,  # we will add real sessions later
             bot_id=bot.id,
             user_message=payload.message,
             bot_response=answer,
@@ -138,6 +138,7 @@ def chat_with_bot(
 
         logger.info(
             f"[METRICS] bot_id={bot.id} messages={bot.message_count}, "
+            f"session={session_id}, session_messages={message_count + 1}/3, "
             f"response_time_ms={duration_ms}"
         )
 
