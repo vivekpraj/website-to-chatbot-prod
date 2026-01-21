@@ -122,10 +122,10 @@ export default function LandingPage() {
                   <Code className="w-8 h-8 text-purple-400" />
                 </div>
                 <h3 className="text-2xl font-bold mb-3 text-white">
-                  Easy Integration
+                  Share Anywhere
                 </h3>
                 <p className="text-gray-400 leading-relaxed">
-                  Embed anywhere with a simple snippet. Works on any platform, instantly.
+                  Get a unique URL for your chatbot and share it instantly with your team or customers.
                 </p>
               </div>
             </div>
