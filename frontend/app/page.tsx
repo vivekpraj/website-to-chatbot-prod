@@ -51,7 +51,7 @@ export default function LandingPage() {
               </span>
             </div>
             
-            <h1 className="text-7xl md:text-8xl font-black mb-8 leading-tight">
+            <h1 className="text-6xl md:text-8xl font-black mb-8 leading-tight">
               <span className="bg-gradient-to-r from-white via-purple-200 to-orange-200 bg-clip-text text-transparent">
                 TURN YOUR CONTENT
               </span>
@@ -63,7 +63,8 @@ export default function LandingPage() {
             
             <p className="text-xl text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed">
               Transform any website into an intelligent AI chatbot in minutes. 
-              AI-powered chatbots trained on your website content, ready to engage visitors 24/7. That's CustomBot.
+              AI-powered chatbots trained on your website content, ready to engage visitors 24/7. 
+              That's CustomBot.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
