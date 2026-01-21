@@ -41,7 +41,12 @@ export default function ChatPage() {
 
       if (!res.ok) {
         if (res.status === 429) {
-          setError("AI is temporarily unavailable. Please wait and try again.");
+          // Check if it's question limit or API quota
+          if (data.detail && data.detail.includes("question limit")) {
+            setError(data.detail);
+          } else {
+            setError("AI is temporarily unavailable. Please wait and try again.");
+          }
         } else {
           setError(data.detail || "Chat failed");
         }
