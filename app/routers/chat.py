@@ -65,7 +65,7 @@ def chat_with_bot(
         .count()
     )
     
-    if message_count >= 3:
+    if message_count >= 5:
         logger.warning(
             f"Session {session_id} has reached question limit ({message_count}/10) for bot {bot_id}"
         )
