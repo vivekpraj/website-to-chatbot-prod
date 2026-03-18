@@ -1,6 +1,6 @@
 import os
 import logging
-import requests
+import httpx
 import json
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "dummy-key")
 SITE_URL = os.getenv("SITE_URL", "https://website-to-chatbot-prod.vercel.app")
 SITE_NAME = os.getenv("SITE_NAME", "CustomBot")
 
-def generate_answer(prompt: str) -> str:
+async def generate_answer(prompt: str) -> str:
     """
     Sends prompt to Google Gemma 3 via OpenRouter (free tier).
     """
@@ -45,12 +45,13 @@ def generate_answer(prompt: str) -> str:
         
         logger.info(f"Sending request to OpenRouter with model: {payload['model']}")
         
-        response = requests.post(
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers=headers,
-            json=payload,  # Use json= instead of data=json.dumps()
+            json=payload,
             timeout=30
-        )
+    )
         
         # Log the response for debugging
         logger.info(f"OpenRouter response status: {response.status_code}")
@@ -68,7 +69,7 @@ def generate_answer(prompt: str) -> str:
             logger.error(f"Unexpected OpenRouter response structure: {result}")
             raise Exception("Invalid response from OpenRouter")
             
-    except requests.exceptions.HTTPError as e:
+    except httpx.HTTPStatusError as e:
         if e.response.status_code == 429:
             logger.error(f"OpenRouter quota error: {e}")
             raise AIQuotaError("AI service quota exceeded")
@@ -79,7 +80,7 @@ def generate_answer(prompt: str) -> str:
         else:
             logger.error(f"OpenRouter HTTP error: {e.response.status_code} - {e.response.text}")
             raise Exception(f"AI service error: {e.response.status_code}")
-    except requests.exceptions.RequestException as e:
+    except httpx.HTTPStatusError as e:
         logger.error(f"OpenRouter request error: {e}")
         raise Exception(f"Failed to connect to AI service: {str(e)}")
     except Exception as e:
