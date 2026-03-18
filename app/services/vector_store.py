@@ -1,7 +1,7 @@
 
 
 import os
-from qdrant_client import QdrantClient
+from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from typing import List, Tuple
 import uuid
@@ -17,10 +17,10 @@ print("QDRANT_API_KEY =", "SET" if QDRANT_API_KEY else "NOT SET")
 
 # Initialize client
 if QDRANT_URL and QDRANT_API_KEY:
-    client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    client = AsyncQdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 else:
     # Local mode for testing
-    client = QdrantClient(":memory:")
+    client = AsyncQdrantClient(":memory:")
 
 COLLECTION_PREFIX = "bot_"
 
@@ -75,7 +75,7 @@ def add_chunks_to_qdrant(
     
     print(f"✅ Added {len(points)} chunks to {collection_name}")
 
-def retrieve_chunks(
+async def retrieve_chunks(
     bot_id: str,
     query_vector: List[float],
     top_k: int = 5
@@ -85,7 +85,7 @@ def retrieve_chunks(
     collection_name = get_collection_name(bot_id)
     
     # Use query_points instead of search
-    search_result = client.query_points(
+    search_result = await client.query_points(
         collection_name=collection_name,
         query=query_vector,
         limit=top_k
