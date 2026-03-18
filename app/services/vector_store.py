@@ -42,7 +42,7 @@ def init_collection(bot_id: str, vector_size: int = 384):
         )
         print(f"Created collection {collection_name}")
 
-def add_chunks_to_qdrant(
+async def add_chunks_to_qdrant(
     bot_id: str,
     texts: List[str],
     embeddings: List[List[float]],
@@ -103,12 +103,12 @@ async def retrieve_chunks(
     
     return chunks, metadatas
 
-def delete_collection(bot_id: str):
+async def delete_collection(bot_id: str):
     """Delete a bot's collection"""
     collection_name = get_collection_name(bot_id)
     
     try:
-        client.delete_collection(collection_name)
+        await client.delete_collection(collection_name)
         print(f"✅ Deleted collection {collection_name}")
     except Exception as e:
         print(f"⚠️ Could not delete {collection_name}: {e}")

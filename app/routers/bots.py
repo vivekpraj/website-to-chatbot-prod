@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/create", response_model=schemas.BotCreateResponse)
-def create_bot(
+async def create_bot(
     payload: schemas.BotCreateRequest,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),  # 👈 must be logged in
@@ -123,7 +123,7 @@ def create_bot(
                 logger.warning(f"No chunks created for page: {page_url}")
                 continue
 
-            embeddings = embed_text(chunks)
+            embeddings = await embed_text(chunks)
 
             for c, e in zip(chunks, embeddings):
                 chunk_index = len(all_chunks)
@@ -164,7 +164,7 @@ def create_bot(
 
 
 @router.post("/{bot_id}/refresh", response_model=schemas.BotCreateResponse)
-def refresh_bot(
+async def refresh_bot(
     bot_id: str,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),  # 👈 must be logged in
@@ -227,7 +227,7 @@ def refresh_bot(
                 logger.warning(f"[REFRESH] No chunks created for page: {page_url}")
                 continue
 
-            embeddings = embed_text(chunks)
+            embeddings = await embed_text(chunks)
 
             for c, e in zip(chunks, embeddings):
                 chunk_index = len(all_chunks)
