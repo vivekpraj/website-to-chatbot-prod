@@ -28,15 +28,15 @@ def get_collection_name(bot_id: str) -> str:
     """Get collection name for a bot"""
     return f"{COLLECTION_PREFIX}{bot_id}"
 
-def init_collection(bot_id: str, vector_size: int = 384):
+async def init_collection(bot_id: str, vector_size: int = 384):
     """Initialize collection if it doesn't exist"""
     collection_name = get_collection_name(bot_id)
     
     try:
-        client.get_collection(collection_name)
+        await client.get_collection(collection_name)
         print(f"Collection {collection_name} already exists")
     except:
-        client.create_collection(
+        await client.create_collection(
             collection_name=collection_name,
             vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE)
         )
@@ -52,7 +52,7 @@ async def add_chunks_to_qdrant(
     
     # Detect vector size from first embedding
     vector_size = len(embeddings[0])
-    init_collection(bot_id, vector_size)
+    await init_collection(bot_id, vector_size)
     
     collection_name = get_collection_name(bot_id)
     
@@ -68,7 +68,7 @@ async def add_chunks_to_qdrant(
         for text, embedding, metadata in zip(texts, embeddings, metadatas)
     ]
     
-    client.upsert(
+    await client.upsert(
         collection_name=collection_name,
         points=points
     )
