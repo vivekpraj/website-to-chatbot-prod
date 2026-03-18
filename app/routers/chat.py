@@ -76,7 +76,8 @@ async def chat_with_bot(
 
 
     # 2️⃣ Embed user question
-    query_vec = await embed_text([payload.message])[0]
+    embeddings = await embed_text([payload.message])
+    query_vec = embeddings[0]
 
     # 3️⃣ Retrieve top chunks + metadata from Chroma
     chunks, metadatas = await retrieve_chunks(bot_id, query_vec, top_k=3)
