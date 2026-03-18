@@ -1,3 +1,4 @@
+from http.client import HTTPException
 import os
 import logging
 import httpx
@@ -50,7 +51,7 @@ async def generate_answer(prompt: str) -> str:
             url="https://openrouter.ai/api/v1/chat/completions",
             headers=headers,
             json=payload,
-            timeout=30
+            timeout=60
     )
         
         # Log the response for debugging
@@ -86,3 +87,8 @@ async def generate_answer(prompt: str) -> str:
     except Exception as e:
         logger.error(f"OpenRouter unexpected error: {e}")
         raise
+    except httpx.ReadTimeout:
+        raise HTTPException(
+        status_code=504,
+        detail="AI service took too long to respond. Please try again."
+    )
