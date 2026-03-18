@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/{bot_id}", response_model=schemas.ChatResponse)
-def chat_with_bot(
+async def chat_with_bot(
     bot_id: str,
     payload: schemas.ChatRequest,
     request: Request,
@@ -76,10 +76,10 @@ def chat_with_bot(
 
 
     # 2️⃣ Embed user question
-    query_vec = embed_text([payload.message])[0]
+    query_vec = await embed_text([payload.message])[0]
 
     # 3️⃣ Retrieve top chunks + metadata from Chroma
-    chunks, metadatas = retrieve_chunks(bot_id, query_vec, top_k=3)
+    chunks, metadatas = await retrieve_chunks(bot_id, query_vec, top_k=3)
 
     if not chunks:
         logger.warning(f"No chunks retrieved from Chroma for bot {bot_id}")
@@ -94,7 +94,7 @@ def chat_with_bot(
 
     # 5️⃣ Generate final answer
     try:
-        answer = generate_answer(prompt)
+        answer = await generate_answer(prompt)
     except AIQuotaError:
         raise HTTPException(
             status_code=429,

@@ -1,5 +1,5 @@
 import os
-import requests
+import httpx
 from typing import List
 from dotenv import load_dotenv
 
@@ -9,7 +9,7 @@ HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 HF_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 HF_URL = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}"
 
-def embed_text(texts: List[str]) -> List[List[float]]:
+async def embed_text(texts: List[str]) -> List[List[float]]:
     """
     Get embeddings from Hugging Face API
     """
@@ -19,7 +19,8 @@ def embed_text(texts: List[str]) -> List[List[float]]:
     embeddings = []
 
     for text in texts:
-        response = requests.post(
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
             HF_URL,
             headers={
                 "Authorization": f"Bearer {HF_API_TOKEN}",
