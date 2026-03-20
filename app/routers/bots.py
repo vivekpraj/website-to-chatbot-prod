@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app import models, schemas
 
-from app.services.crawler import crawl_website
+from app.services.crawler_apify import crawl_website
 from app.services.text_processing import process_text_to_chunks
 from app.services.embeddings import embed_text
 from app.services.vector_store import add_chunks_to_qdrant, delete_collection

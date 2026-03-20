@@ -5,7 +5,7 @@ import httpx
 async def send_request():
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            "https://website-to-chatbot-prod.onrender.com/api/chat/11011b41-dbb7-4746-ac45-cc62007bf45a",
+            "https://website-to-chatbot-prod.onrender.com/api/chat/6680f4d7-4f25-4121-a266-9d313b194883",
             json={"message": "what is this website about?"},
             timeout=60
         )
