@@ -133,7 +133,7 @@ def get_saas_stats(
 # 4) DELETE BOT (ADMIN ONLY)
 # ---------------------------------------------------
 @router.delete("/bots/{bot_id}")
-def admin_delete_bot(
+async def admin_delete_bot(
     bot_id: str,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -148,7 +148,7 @@ def admin_delete_bot(
         raise HTTPException(status_code=404, detail="Bot not found")
 
     # delete vector store folder
-    delete_collection(bot_id)
+    await delete_collection(bot_id)
 
     db.delete(bot)
     db.commit()
@@ -160,7 +160,7 @@ def admin_delete_bot(
 # 5) DELETE USER (ADMIN ONLY)
 # ---------------------------------------------------
 @router.delete("/users/{user_id}")
-def admin_delete_user(
+async def admin_delete_user(
     user_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -176,7 +176,7 @@ def admin_delete_user(
 
     # Optionally: delete each bot's Chroma
     for bot in user.bots:
-        delete_collection(bot.bot_id)
+        await delete_collection(bot.bot_id)
 
     db.delete(user)
     db.commit()
