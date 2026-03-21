@@ -60,3 +60,6 @@ app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(admin.router, tags=["admin"])
 
+@app.get("/")
+def health_check():
+    return {"status": "ok"}

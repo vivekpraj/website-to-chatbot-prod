@@ -53,6 +53,7 @@ def list_users(
                 name=u.name,
                 role=u.role,
                 bot_count=bot_count,
+                created_at=u.created_at,
             )
         )
 

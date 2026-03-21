@@ -19,6 +19,8 @@ class User(Base):
     # Role: superadmin / client
     role = Column(String, default="client")
 
+    created_at = Column(DateTime, default=datetime.utcnow)
+
     # One user -> Many bots
     bots = relationship("Bot", back_populates="owner", cascade="all, delete")
 
