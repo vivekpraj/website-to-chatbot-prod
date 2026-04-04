@@ -2,6 +2,7 @@ import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -16,77 +17,135 @@ from app.routers.auth import get_current_user  # 👈 use this for auth
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# -------------------------------------------------------------
+# 🔧 BACKGROUND PIPELINE FUNCTION
+# -------------------------------------------------------------
+async def run_pipeline(bot_id: str, website_url: str, bot_db_id: int):
+    db = next(get_db())
+    try:
+        bot = db.query(models.Bot).filter(models.Bot.id == bot_db_id).first()
+ 
+        logger.info(f"[PIPELINE] Starting for bot {bot_id}")
+ 
+        # 1️⃣ CRAWL
+        page_texts = crawl_website(website_url, max_pages=10)
+        if not page_texts:
+            raise Exception("No pages found or all pages were empty.")
+ 
+        logger.info(f"[PIPELINE] Crawled {len(page_texts)} pages.")
+ 
+        all_chunks = []
+        all_embeddings = []
+        all_metadatas = []
+ 
+        # 2️⃣ CHUNK + EMBED
+        for page_url, text in page_texts.items():
+            logger.info(f"[PIPELINE] Processing page: {page_url}")
+ 
+            chunks = process_text_to_chunks(text)
+            if not chunks:
+                logger.warning(f"[PIPELINE] No chunks for page: {page_url}")
+                continue
+ 
+            embeddings = await embed_text(chunks)
+ 
+            for c, e in zip(chunks, embeddings):
+                chunk_index = len(all_chunks)
+                all_chunks.append(c)
+                all_embeddings.append(e)
+                all_metadatas.append({
+                    "bot_id": bot_id,
+                    "page_url": page_url,
+                    "chunk_index": chunk_index,
+                })
+ 
+        if not all_chunks:
+            raise Exception("No chunks generated from the entire website.")
+ 
+        # 3️⃣ SAVE TO QDRANT
+        logger.info(f"[PIPELINE] Saving {len(all_chunks)} chunks for bot {bot_id}")
+        await add_chunks_to_qdrant(bot_id, all_chunks, all_embeddings, all_metadatas)
+ 
+        # 4️⃣ MARK READY
+        bot.status = "ready"
+        db.commit()
+        logger.info(f"[PIPELINE] Bot {bot_id} is READY!")
+ 
+    except Exception as e:
+        logger.exception(f"[PIPELINE] Failed for bot {bot_id}: {e}")
+        bot = db.query(models.Bot).filter(models.Bot.id == bot_db_id).first()
+        if bot:
+            bot.status = "failed"
+            db.commit()
+    finally:
+        db.close()
+ 
+ # -------------------------------------------------------------
+# 📊 BOT STATUS ENDPOINT (for frontend polling)
+# -------------------------------------------------------------
+@router.get("/{bot_id}/status")
+def get_bot_status(
+    bot_id: str,
+    db: Session = Depends(get_db),
+):
+    bot = db.query(models.Bot).filter(models.Bot.bot_id == bot_id).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    return {"status": bot.status, "bot_id": bot.bot_id}
 
 @router.post("/create", response_model=schemas.BotCreateResponse)
 async def create_bot(
     payload: schemas.BotCreateRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),  # 👈 must be logged in
+    current_user: models.User = Depends(get_current_user),
 ):
-    """
-    Complete multi-page pipeline:
-    1. Save bot in DB as "processing"
-    2. Crawl website (multi-page)
-    3. Clean + Chunk per page
-    4. Embed chunks
-    5. Store into Chroma with page_url metadata
-    6. Mark bot as READY
-    """
-
     website_url = str(payload.website_url)
-    logger.info(
-        f"User {current_user.id} ({current_user.email}) requested bot for: {website_url}"
-    )
-
-    # --- ✅ NEW: Check bot limit for this user ---
+    logger.info(f"User {current_user.id} ({current_user.email}) requested bot for: {website_url}")
+ 
+    # Check bot limit
     user_bot_count = (
         db.query(models.Bot)
         .filter(models.Bot.user_id == current_user.id)
         .count()
     )
-    
+ 
     if user_bot_count >= 1:
-        logger.warning(
-            f"User {current_user.id} has reached bot limit ({user_bot_count}/1)"
-        )
+        logger.warning(f"User {current_user.id} has reached bot limit ({user_bot_count}/1)")
         raise HTTPException(
             status_code=400,
             detail="You can only create 1 bot on the free plan. Upgrade to create more bots."
         )
-    
-    # --- check for existing bot for THIS USER + URL ---
+ 
+    # Check for existing bot
     existing_bot = (
         db.query(models.Bot)
         .filter(
             models.Bot.website_url == website_url,
-            models.Bot.user_id == current_user.id,      # 👈 only their own bots
+            models.Bot.user_id == current_user.id,
         )
         .first()
     )
     if existing_bot:
-        logger.info(
-            f"Bot already exists for user {current_user.id} and URL {website_url}, "
-            f"reusing bot_id={existing_bot.bot_id}"
-        )
-        chat_url = f"/chat/{existing_bot.bot_id}"
+        logger.info(f"Reusing existing bot_id={existing_bot.bot_id}")
         return schemas.BotCreateResponse(
             bot_id=existing_bot.bot_id,
-            chat_url=chat_url,
+            chat_url=f"/chat/{existing_bot.bot_id}",
             status=existing_bot.status,
         )
-
-    # --- create new bot ---
+ 
+    # Create new bot in DB
     bot_id = str(uuid.uuid4())
-    logger.info(f"Creating new bot with bot_id={bot_id} for user {current_user.id}")
-
+    logger.info(f"Creating new bot with bot_id={bot_id}")
+ 
     new_bot = models.Bot(
         bot_id=bot_id,
         website_url=website_url,
         status="processing",
         vector_index_path=f"app/data/chroma/bots/{bot_id}",
-        user_id=current_user.id,  # 👈 link to owner
+        user_id=current_user.id,
     )
-
+ 
     try:
         db.add(new_bot)
         db.commit()
@@ -95,73 +154,15 @@ async def create_bot(
         db.rollback()
         logger.exception("Failed to save bot in DB.")
         raise HTTPException(status_code=500, detail="Failed to create bot")
-
-    # -------------------------------------------------------------
-    # 💥  PIPELINE STARTS  (crawl → chunk → embed → save)
-    # -------------------------------------------------------------
-    logger.info("Starting multi-page bot processing pipeline...")
-
-    try:
-        # 1️⃣ CRAWL WEBSITE
-        page_texts = crawl_website(website_url, max_pages=10)
-
-        if not page_texts:
-            raise Exception("No pages found or all pages were empty.")
-
-        logger.info(f"Crawled {len(page_texts)} pages.")
-
-        all_chunks = []
-        all_embeddings = []
-        all_metadatas = []
-
-        # 2️⃣ FOR EACH PAGE → CHUNK + EMBED + METADATA
-        for page_url, text in page_texts.items():
-            logger.info(f"Processing page: {page_url}")
-
-            chunks = process_text_to_chunks(text)
-            if not chunks:
-                logger.warning(f"No chunks created for page: {page_url}")
-                continue
-
-            embeddings = await embed_text(chunks)
-
-            for c, e in zip(chunks, embeddings):
-                chunk_index = len(all_chunks)
-                all_chunks.append(c)
-                all_embeddings.append(e)
-                all_metadatas.append(
-                    {
-                        "bot_id": bot_id,
-                        "page_url": page_url,
-                        "chunk_index": chunk_index,
-                    }
-                )
-
-        if not all_chunks:
-            raise Exception("No chunks generated from the entire website.")
-
-        # 3️⃣ STORE IN CHROMA
-        logger.info(f"Saving {len(all_chunks)} chunks into Chroma for bot {bot_id}")
-        await add_chunks_to_qdrant(bot_id, all_chunks, all_embeddings, all_metadatas)
-
-        # 4️⃣ MARK BOT READY
-        new_bot.status = "ready"
-        db.commit()
-        logger.info(f"Bot {bot_id} fully generated and READY!")
-
-    except Exception as e:
-        logger.exception("Pipeline failed. Marking bot as FAILED.")
-        new_bot.status = "failed"
-        db.commit()
-        raise HTTPException(status_code=500, detail=f"Bot processing failed: {str(e)}")
-
-    chat_url = f"/chat/{new_bot.bot_id}"
+ 
+    # 🚀 Run pipeline in background — return immediately
+    background_tasks.add_task(run_pipeline, bot_id, website_url, new_bot.id)
+ 
     return schemas.BotCreateResponse(
-        bot_id=new_bot.bot_id,
-        chat_url=chat_url,
-        status=new_bot.status,
+        bot_id=bot_id,
+        chat_url=f"/chat/{bot_id}",
+        status="processing",
     )
-
 
 @router.post("/{bot_id}/refresh", response_model=schemas.BotCreateResponse)
 async def refresh_bot(
@@ -332,3 +333,13 @@ def list_my_bots(
         )
         for b in bots
     ]
+
+@router.get("/{bot_id}/status")
+def get_bot_status(
+    bot_id: str,
+    db: Session = Depends(get_db),
+):
+    bot = db.query(models.Bot).filter(models.Bot.bot_id == bot_id).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    return {"status": bot.status, "bot_id": bot.bot_id}
