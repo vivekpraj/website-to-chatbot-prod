@@ -1,9 +1,10 @@
 import logging
 from typing import List
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, cast, Date
 
 from app.db import get_db
 from app import models, schemas
@@ -128,6 +129,127 @@ def get_saas_stats(
         total_bots=total_bots,
         total_messages=total_messages,
     )
+
+# ---------------------------------------------------
+# 4) ANALYTICS (ADMIN ONLY)
+# ---------------------------------------------------
+@router.get("/analytics")
+def get_analytics(
+    days: int = 30,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Admin: detailed analytics for the past N days.
+    Returns:
+    - messages_per_day
+    - users_per_day
+    - bots_per_day
+    - top_bots (by message count)
+    - avg_response_time_ms
+    - unique_sessions_per_day
+    """
+    ensure_super_admin(current_user)
+ 
+    since = datetime.utcnow() - timedelta(days=days)
+ 
+    # Messages per day
+    messages_per_day_raw = (
+        db.query(
+            cast(models.ChatLog.created_at, Date).label("date"),
+            func.count(models.ChatLog.id).label("count"),
+        )
+        .filter(models.ChatLog.created_at >= since)
+        .group_by(cast(models.ChatLog.created_at, Date))
+        .order_by(cast(models.ChatLog.created_at, Date))
+        .all()
+    )
+    messages_per_day = [
+        {"date": str(row.date), "count": row.count}
+        for row in messages_per_day_raw
+    ]
+ 
+    # New users per day
+    users_per_day_raw = (
+        db.query(
+            cast(models.User.created_at, Date).label("date"),
+            func.count(models.User.id).label("count"),
+        )
+        .filter(models.User.created_at >= since)
+        .group_by(cast(models.User.created_at, Date))
+        .order_by(cast(models.User.created_at, Date))
+        .all()
+    )
+    users_per_day = [
+        {"date": str(row.date), "count": row.count}
+        for row in users_per_day_raw
+    ]
+ 
+    # New bots per day
+    bots_per_day_raw = (
+        db.query(
+            cast(models.Bot.created_at, Date).label("date"),
+            func.count(models.Bot.id).label("count"),
+        )
+        .filter(models.Bot.created_at >= since)
+        .group_by(cast(models.Bot.created_at, Date))
+        .order_by(cast(models.Bot.created_at, Date))
+        .all()
+    )
+    bots_per_day = [
+        {"date": str(row.date), "count": row.count}
+        for row in bots_per_day_raw
+    ]
+ 
+    # Top 5 bots by message count
+    top_bots_raw = (
+        db.query(models.Bot)
+        .order_by(models.Bot.message_count.desc())
+        .limit(5)
+        .all()
+    )
+    top_bots = [
+        {
+            "bot_id": b.bot_id,
+            "website_url": b.website_url,
+            "message_count": b.message_count or 0,
+            "owner_email": b.owner.email if b.owner else None,
+            "last_used_at": b.last_used_at.isoformat() if b.last_used_at else None,
+        }
+        for b in top_bots_raw
+    ]
+ 
+    # Average response time
+    avg_response_time = (
+        db.query(func.avg(models.ChatLog.response_time_ms))
+        .filter(models.ChatLog.created_at >= since)
+        .scalar()
+    )
+ 
+    # Unique sessions per day
+    unique_sessions_per_day_raw = (
+        db.query(
+            cast(models.ChatLog.created_at, Date).label("date"),
+            func.count(func.distinct(models.ChatLog.session_id)).label("count"),
+        )
+        .filter(models.ChatLog.created_at >= since)
+        .group_by(cast(models.ChatLog.created_at, Date))
+        .order_by(cast(models.ChatLog.created_at, Date))
+        .all()
+    )
+    unique_sessions_per_day = [
+        {"date": str(row.date), "count": row.count}
+        for row in unique_sessions_per_day_raw
+    ]
+ 
+    return {
+        "messages_per_day": messages_per_day,
+        "users_per_day": users_per_day,
+        "bots_per_day": bots_per_day,
+        "top_bots": top_bots,
+        "avg_response_time_ms": round(avg_response_time) if avg_response_time else 0,
+        "unique_sessions_per_day": unique_sessions_per_day,
+    }
 
 
 # ---------------------------------------------------

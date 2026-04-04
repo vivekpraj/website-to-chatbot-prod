@@ -19,3 +19,5 @@ app/data/chroma/bots/
 .vscode/
 .idea/
 
+node_modules/
+
