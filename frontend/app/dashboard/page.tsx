@@ -352,7 +352,12 @@ export default function DashboardPage() {
               <Users className="w-6 h-6 text-orange-400" />
               Admin Controls
             </h2>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
+               <Link href="/admin" className="group bg-gradient-to-br from-green-900/20 to-green-600/10 backdrop-blur-xl border border-green-500/20 rounded-2xl p-6 hover:border-green-500/50 transition-all hover:scale-[1.02]">
+                  <LayoutDashboard className="w-8 h-8 text-green-400 mb-3" />
+                  <h3 className="text-xl font-bold mb-2">Admin Panel</h3>
+                  <p className="text-sm text-gray-400">Full platform overview and controls</p>
+                </Link>
               <Link href="/admin/users" className="group bg-gradient-to-br from-purple-900/20 to-purple-600/10 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 hover:border-purple-500/50 transition-all hover:scale-[1.02]">
                 <Users className="w-8 h-8 text-purple-400 mb-3" />
                 <h3 className="text-xl font-bold mb-2">View All Users</h3>
