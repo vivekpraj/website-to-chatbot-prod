@@ -10,51 +10,38 @@ HF_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 HF_URL = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}"
 
 async def embed_text(texts: List[str]) -> List[List[float]]:
-    """
-    Get embeddings from Hugging Face API
-    """
     if not HF_API_TOKEN:
         raise Exception("HF_API_TOKEN not set in environment variables")
-    
+
     embeddings = []
 
     for text in texts:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-            HF_URL,
-            headers={
-                "Authorization": f"Bearer {HF_API_TOKEN}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "inputs": {
-                    "source_sentence": text,
-                    "sentences": [text]  # Required parameter
-                }
-            }
-        )
+                f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL}",
+                headers={
+                    "Authorization": f"Bearer {HF_API_TOKEN}",
+                    "Content-Type": "application/json"
+                },
+                json={"inputs": text}
+            )
 
         if response.status_code != 200:
             raise Exception(f"HF embedding failed: {response.status_code} - {response.text}")
 
         result = response.json()
-        
-        # The result should contain embeddings
-        # Try different response formats
+
         if isinstance(result, list) and len(result) > 0:
             if isinstance(result[0], list):
                 vector = result[0]
             else:
                 vector = result
         else:
-            # Might be in a different structure
-            print(f"Response structure: {result}")
             raise Exception(f"Unexpected response format: {type(result)}")
 
         embeddings.append(vector)
 
     return embeddings
-
 
 # -------------------------------------------------
 # 🔍 QUICK LOCAL TEST (run this file directly)
