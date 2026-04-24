@@ -14,6 +14,12 @@ type BotType = {
   website_url: string;
   status: string;
   created_at: string;
+  bot_name?: string;
+  greeting_message?: string;
+  primary_color?: string;
+  background_color?: string;
+  text_color?: string;
+  logo_url?: string;
 };
 
 const PROGRESS_STEPS = [
@@ -26,6 +32,12 @@ const PROGRESS_STEPS = [
 
 export default function DashboardPage() {
   const [websiteUrl, setWebsiteUrl] = useState("");
+  const [botName, setBotName] = useState("");
+  const [greetingMessage, setGreetingMessage] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("#2563eb");
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [textColor, setTextColor] = useState("#111827");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -112,13 +124,39 @@ export default function DashboardPage() {
 
     try {
       const token = getToken();
+
+      let uploadedLogoUrl = "";
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append("file", logoFile);
+        const uploadRes = await fetch(`${API_BASE_URL}/bots/upload-logo`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) {
+          setError("Logo upload failed");
+          return;
+        }
+        uploadedLogoUrl = uploadData.logo_url;
+      }
+
       const res = await fetch(`${API_BASE_URL}/bots/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ website_url: websiteUrl }),
+        body: JSON.stringify({
+          website_url: websiteUrl,
+          bot_name: botName || null,
+          greeting_message: greetingMessage || null,
+          primary_color: primaryColor,
+          background_color: backgroundColor,
+          text_color: textColor,
+          logo_url: uploadedLogoUrl || null,
+        }),
       });
 
       const data = await res.json();
@@ -129,6 +167,9 @@ export default function DashboardPage() {
       }
 
       setWebsiteUrl("");
+      setBotName("");
+      setGreetingMessage("");
+      setLogoFile(null);
       setCreatingBotId(data.bot_id);
       setProgressStep(0);
       startPolling(data.bot_id);
@@ -250,6 +291,74 @@ export default function DashboardPage() {
                       <Globe className="w-3 h-3" />
                       Enter the website you want to create a chatbot for
                     </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Bot Name <span className="text-gray-500">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Sharma Electronics Assistant"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
+                      value={botName}
+                      onChange={(e) => setBotName(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Greeting Message <span className="text-gray-500">(optional)</span>
+                    </label>
+                    <textarea
+                      placeholder="e.g. Hi! I'm here to help you with any questions about our products."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition resize-none"
+                      rows={3}
+                      value={greetingMessage}
+                      onChange={(e) => setGreetingMessage(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Brand Logo <span className="text-gray-500">(optional)</span>
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 focus:outline-none transition"
+                      onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Primary Color</label>
+                      <input
+                        type="color"
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Background</label>
+                      <input
+                        type="color"
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Text Color</label>
+                      <input
+                        type="color"
+                        value={textColor}
+                        onChange={(e) => setTextColor(e.target.value)}
+                        className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer"
+                      />
+                    </div>
                   </div>
 
                   <button

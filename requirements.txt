@@ -18,3 +18,4 @@ numpy
 jinja2
 psycopg2-binary
 apify-client
+cloudinary

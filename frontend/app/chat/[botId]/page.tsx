@@ -4,10 +4,21 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { API_BASE_URL } from "@/lib/constants";
 import { Bot, Send, Loader, AlertCircle, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { useEffect } from "react";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
+};
+
+type BotConfig = {
+  bot_name: string | null;
+  greeting_message: string | null;
+  primary_color: string;
+  background_color: string;
+  text_color: string;
+  logo_url: string | null;
 };
 
 export default function ChatPage() {
@@ -17,6 +28,30 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [botConfig, setBotConfig] = useState<BotConfig>({
+    bot_name: null,
+    greeting_message: null,
+    primary_color: "#2563eb",
+    background_color: "#ffffff",
+    text_color: "#111827",
+    logo_url: null,
+  });
+
+  useEffect(() => {
+    async function fetchBotConfig() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/bots/${botId}/public`);
+        if (res.ok) {
+          const data = await res.json();
+          setBotConfig(data);
+        }
+      } catch {
+        console.error("Failed to fetch bot config");
+      }
+    }
+    fetchBotConfig();
+  }, [botId]);
+
 
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
@@ -67,7 +102,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: botConfig.background_color, color: botConfig.text_color }}>
       {/* Animated background */}
       <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-black to-orange-900/20 pointer-events-none" />
       <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
@@ -75,16 +110,26 @@ export default function ChatPage() {
 
       {/* Header */}
       <header className="relative border-b border-white/10 bg-black/50 backdrop-blur-xl z-10">
-        <div className="max-w-4xl mx-auto px-6 py-4">
+                <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-orange-500 rounded-xl flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
-            </div>
+            {botConfig.logo_url ? (
+              <Image
+                src={botConfig.logo_url}
+                alt="Bot Logo"
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-xl object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: botConfig.primary_color }}>
+                <Bot className="w-6 h-6 text-white" />
+              </div>
+            )}
             <div>
-              <h1 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent">
-                AI Assistant
+              <h1 className="text-lg font-bold">
+                {botConfig.bot_name || "AI Assistant"}
               </h1>
-              <p className="text-xs text-gray-500 font-mono">Bot ID: {botId}</p>
+              <p className="text-xs opacity-50 font-mono">Powered by CustomBot</p>
             </div>
           </div>
         </div>
@@ -93,13 +138,17 @@ export default function ChatPage() {
       {/* Messages */}
       <div className="relative flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
-          {messages.length === 0 && (
+                    {messages.length === 0 && (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-purple-500/20">
-                <Sparkles className="w-8 h-8 text-purple-400" />
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: botConfig.primary_color + "33", border: `1px solid ${botConfig.primary_color}55` }}>
+                <Sparkles className="w-8 h-8" style={{ color: botConfig.primary_color }} />
               </div>
-              <h2 className="text-xl font-bold mb-2">Welcome to CustomBot</h2>
-              <p className="text-gray-400">Ask me anything about the website!</p>
+              <h2 className="text-xl font-bold mb-2">
+                {botConfig.bot_name ? `Welcome to ${botConfig.bot_name}` : "Welcome to CustomBot"}
+              </h2>
+              <p className="opacity-60">
+                {botConfig.greeting_message || "Ask me anything about the website!"}
+              </p>
             </div>
           )}
 

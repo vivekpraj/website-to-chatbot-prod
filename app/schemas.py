@@ -9,6 +9,12 @@ from datetime import datetime
 # -----------------------------
 class BotCreateRequest(BaseModel):
     website_url: HttpUrl
+    bot_name: Optional[str] = None
+    greeting_message: Optional[str] = None
+    primary_color: Optional[str] = "#2563eb"
+    background_color: Optional[str] = "#ffffff"
+    text_color: Optional[str] = "#111827"
+    logo_url: Optional[str] = None
 
 
 # -----------------------------
@@ -123,6 +129,12 @@ class BotSummary(BaseModel):
     created_at: datetime
     last_used_at: datetime | None = None
     chat_url: str
+    bot_name: Optional[str] = None
+    greeting_message: Optional[str] = None
+    primary_color: Optional[str] = "#2563eb"
+    background_color: Optional[str] = "#ffffff"
+    text_color: Optional[str] = "#111827"
+    logo_url: Optional[str] = None
 
     class Config:
         from_attributes = True

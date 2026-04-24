@@ -45,6 +45,12 @@ class Bot(Base):
     last_used_at = Column(DateTime, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+    bot_name = Column(String, nullable=True)
+    greeting_message = Column(String, nullable=True)
+    primary_color = Column(String, nullable=True, default="#2563eb")
+    background_color = Column(String, nullable=True, default="#ffffff")
+    text_color = Column(String, nullable=True, default="#111827")
+    logo_url = Column(String, nullable=True)
 
     owner = relationship("User", back_populates="bots")
 # -----------------------------

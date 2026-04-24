@@ -4,6 +4,8 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
+from fastapi import File, UploadFile
+from app.services.cloudinary_upload import upload_logo
 
 from app.db import get_db
 from app import models, schemas
@@ -139,12 +141,18 @@ async def create_bot(
     logger.info(f"Creating new bot with bot_id={bot_id}")
  
     new_bot = models.Bot(
-        bot_id=bot_id,
-        website_url=website_url,
-        status="processing",
-        vector_index_path=f"app/data/chroma/bots/{bot_id}",
-        user_id=current_user.id,
-    )
+    bot_id=bot_id,
+    website_url=website_url,
+    status="processing",
+    vector_index_path=f"app/data/chroma/bots/{bot_id}",
+    user_id=current_user.id,
+    bot_name=payload.bot_name,
+    greeting_message=payload.greeting_message,
+    primary_color=payload.primary_color,
+    background_color=payload.background_color,
+    text_color=payload.text_color,
+    logo_url=payload.logo_url,
+)
  
     try:
         db.add(new_bot)
@@ -330,9 +338,42 @@ def list_my_bots(
             created_at=b.created_at,
             last_used_at=b.last_used_at,
             chat_url=f"/chat/{b.bot_id}",
-        )
+            bot_name=b.bot_name,
+            greeting_message=b.greeting_message,
+            primary_color=b.primary_color,
+            background_color=b.background_color,
+            text_color=b.text_color,
+            logo_url=b.logo_url,
+    )
         for b in bots
     ]
+
+@router.post("/upload-logo")
+async def upload_bot_logo(
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(get_current_user),
+):
+    contents = await file.read()
+    filename = f"user_{current_user.id}_{file.filename}"
+    url = upload_logo(contents, filename)
+    return {"logo_url": url}
+
+@router.get("/{bot_id}/public")
+def get_bot_public_details(
+    bot_id: str,
+    db: Session = Depends(get_db),
+):
+    bot = db.query(models.Bot).filter(models.Bot.bot_id == bot_id).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    return {
+        "bot_name": bot.bot_name,
+        "greeting_message": bot.greeting_message,
+        "primary_color": bot.primary_color or "#2563eb",
+        "background_color": bot.background_color or "#ffffff",
+        "text_color": bot.text_color or "#111827",
+        "logo_url": bot.logo_url,
+    }
 
 @router.get("/{bot_id}/status")
 def get_bot_status(
