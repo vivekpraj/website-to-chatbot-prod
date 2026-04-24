@@ -18,7 +18,7 @@ async def embed_text(texts: List[str]) -> List[List[float]]:
     for text in texts:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                f"https://api-inference.huggingface.co/models/{HF_MODEL}",
+                f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}/pipeline/feature-extraction",
                 headers={
                     "Authorization": f"Bearer {HF_API_TOKEN}",
                     "Content-Type": "application/json"
