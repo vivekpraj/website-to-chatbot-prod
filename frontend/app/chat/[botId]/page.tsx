@@ -157,17 +157,22 @@ export default function ChatPage() {
             >
               <div
                 className={`max-w-2xl px-6 py-4 rounded-2xl ${
-                  msg.role === "user"
-                    ? "bg-gradient-to-r from-purple-600 to-orange-600 text-white ml-12"
-                    : "bg-white/5 border border-white/10 backdrop-blur-xl mr-12"
+                  msg.role === "user" ? "ml-12" : "mr-12"
                 }`}
+                style={
+                  msg.role === "user"
+                    ? { backgroundColor: botConfig.primary_color, color: "#ffffff" }
+                    : { backgroundColor: botConfig.primary_color + "15", border: `1px solid ${botConfig.primary_color}33`, color: botConfig.text_color }
+                }
               >
                 {msg.role === "assistant" && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <Bot className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs font-medium text-purple-400">AI Assistant</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 mb-2">
+                  <Bot className="w-4 h-4" style={{ color: botConfig.primary_color }} />
+                  <span className="text-xs font-medium" style={{ color: botConfig.primary_color }}>
+                    {botConfig.bot_name || "AI Assistant"}
+                  </span>
+                </div>
+              )}
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
               </div>
             </div>
@@ -175,10 +180,10 @@ export default function ChatPage() {
 
           {loading && (
             <div className="flex justify-start">
-              <div className="max-w-2xl px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl mr-12">
+              <div className="max-w-2xl px-6 py-4 rounded-2xl mr-12" style={{ backgroundColor: botConfig.primary_color + "15", border: `1px solid ${botConfig.primary_color}33` }}>
                 <div className="flex items-center gap-3">
-                  <Loader className="w-5 h-5 text-purple-400 animate-spin" />
-                  <span className="text-sm text-gray-400">AI is thinking...</span>
+                  <Loader className="w-5 h-5 animate-spin" style={{ color: botConfig.primary_color }} />
+                  <span className="text-sm" style={{ color: botConfig.text_color }}>AI is thinking...</span>
                 </div>
               </div>
             </div>
