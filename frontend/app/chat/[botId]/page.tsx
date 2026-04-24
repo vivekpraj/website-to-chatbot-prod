@@ -103,13 +103,9 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: botConfig.background_color, color: botConfig.text_color }}>
-      {/* Animated background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-black to-orange-900/20 pointer-events-none" />
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse delay-700" />
 
       {/* Header */}
-      <header className="relative border-b border-white/10 bg-black/50 backdrop-blur-xl z-10">
+      <header className="relative border-b backdrop-blur-xl z-10" style={{ borderColor: botConfig.primary_color + "33", backgroundColor: botConfig.background_color }}>
                 <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center gap-3">
             {botConfig.logo_url ? (
@@ -143,10 +139,10 @@ export default function ChatPage() {
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: botConfig.primary_color + "33", border: `1px solid ${botConfig.primary_color}55` }}>
                 <Sparkles className="w-8 h-8" style={{ color: botConfig.primary_color }} />
               </div>
-              <h2 className="text-xl font-bold mb-2">
+              <h2 className="text-xl font-bold mb-2" style={{ color: botConfig.text_color }}>
                 {botConfig.bot_name ? `Welcome to ${botConfig.bot_name}` : "Welcome to CustomBot"}
               </h2>
-              <p className="opacity-60">
+              <p style={{ color: botConfig.text_color, opacity: 0.7 }}>
                 {botConfig.greeting_message || "Ask me anything about the website!"}
               </p>
             </div>
@@ -202,21 +198,23 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="relative border-t border-white/10 bg-black/50 backdrop-blur-xl">
+      <div className="relative border-t" style={{ borderColor: botConfig.primary_color + "33", backgroundColor: botConfig.background_color }}>
         <form onSubmit={sendMessage} className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex gap-3">
             <input
               type="text"
               placeholder="Ask a question..."
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
+               className="flex-1 rounded-xl px-6 py-4 focus:outline-none transition border"
+              style={{ backgroundColor: botConfig.background_color, color: botConfig.text_color, borderColor: botConfig.primary_color + "66" }}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
             />
-            <button
+                        <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="bg-gradient-to-r from-purple-600 to-orange-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] flex items-center gap-2"
+              className="text-white px-8 py-4 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] flex items-center gap-2"
+              style={{ backgroundColor: botConfig.primary_color }}
             >
               <Send className="w-5 h-5" />
               Send
