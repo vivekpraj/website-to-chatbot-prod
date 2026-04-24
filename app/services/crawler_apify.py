@@ -22,6 +22,7 @@ def crawl_website(start_url: str, max_pages: int = 5) -> Dict[str, str]:
         "crawlerType": "cheerio",
         "ignoreCanonicalUrl": True,
         "maxConcurrency": 3,
+        "htmlTransformer": "none",
     }
 
     run = client.actor("apify/website-content-crawler").call(run_input=run_input)
@@ -29,7 +30,7 @@ def crawl_website(start_url: str, max_pages: int = 5) -> Dict[str, str]:
     results = {}
     for item in client.dataset(run["defaultDatasetId"]).iterate_items():
         url = item.get("url")
-        text = item.get("text") or item.get("markdown") or ""
+        text = item.get("text") or item.get("markdown") or item.get("html") or ""
         if url and len(text) > 50:
             results[url] = text
             logger.info(f"[Apify] ✅ Extracted {len(text)} characters from {url}")
@@ -42,7 +43,7 @@ def crawl_website(start_url: str, max_pages: int = 5) -> Dict[str, str]:
 
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             url = item.get("url")
-            text = item.get("text") or item.get("markdown") or ""
+            text = item.get("text") or item.get("markdown") or item.get("html") or ""
             if url and len(text) > 50:
                 results[url] = text
                 logger.info(f"[Apify] ✅ Extracted {len(text)} characters from {url}")
