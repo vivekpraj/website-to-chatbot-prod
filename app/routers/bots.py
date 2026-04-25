@@ -112,14 +112,7 @@ async def create_bot(
         .count()
     )
  
-    if user_bot_count >= 1:
-        logger.warning(f"User {current_user.id} has reached bot limit ({user_bot_count}/1)")
-        raise HTTPException(
-            status_code=400,
-            detail="You can only create 1 bot on the free plan. Upgrade to create more bots."
-        )
- 
-    # Check for existing bot
+    # Check for existing bot FIRST
     existing_bot = (
         db.query(models.Bot)
         .filter(
@@ -129,11 +122,26 @@ async def create_bot(
         .first()
     )
     if existing_bot:
-        logger.info(f"Reusing existing bot_id={existing_bot.bot_id}")
+        logger.info(f"Reusing existing bot_id={existing_bot.bot_id}, updating customization")
+        existing_bot.bot_name = payload.bot_name
+        existing_bot.greeting_message = payload.greeting_message
+        existing_bot.primary_color = payload.primary_color
+        existing_bot.background_color = payload.background_color
+        existing_bot.text_color = payload.text_color
+        existing_bot.logo_url = payload.logo_url
+        db.commit()
         return schemas.BotCreateResponse(
             bot_id=existing_bot.bot_id,
             chat_url=f"/chat/{existing_bot.bot_id}",
             status=existing_bot.status,
+        )
+
+    # THEN check bot limit
+    if user_bot_count >= 1:
+        logger.warning(f"User {current_user.id} has reached bot limit ({user_bot_count}/1)")
+        raise HTTPException(
+            status_code=400,
+            detail="You can only create 1 bot on the free plan. Upgrade to create more bots."
         )
  
     # Create new bot in DB
