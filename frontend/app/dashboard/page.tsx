@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   Bot, Plus, Globe, ExternalLink, Loader, CheckCircle,
   Clock, AlertCircle, LogOut, Users, LayoutDashboard,
-  Pencil, X, Copy, Trash2, Check
+  Pencil, X, Copy, Trash2, Check, Code
 } from "lucide-react";
 
 type BotType = {
@@ -159,6 +159,11 @@ export default function DashboardPage() {
   const [copiedBotId, setCopiedBotId] = useState<string | null>(null);
   const [deletingBotId, setDeletingBotId] = useState<string | null>(null);
 
+  // Embed modal
+  const [embedBotId, setEmbedBotId] = useState<string | null>(null);
+  const [embedTab, setEmbedTab] = useState<"iframe" | "widget">("iframe");
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
+
   // Edit modal
   const [editingBot, setEditingBot] = useState<BotType | null>(null);
   const [editBotName, setEditBotName] = useState("");
@@ -289,6 +294,27 @@ export default function DashboardPage() {
     await navigator.clipboard.writeText(url);
     setCopiedBotId(botId);
     setTimeout(() => setCopiedBotId(null), 2000);
+  }
+
+  function getEmbedCodes(botId: string) {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const chatUrl = `${origin}/chat/${botId}`;
+    return {
+      iframe: `<iframe\n  src="${chatUrl}"\n  width="400"\n  height="600"\n  style="border:none; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.2);"\n  title="AI Chat"\n></iframe>`,
+      widget: `<script\n  src="${origin}/widget.js"\n  data-bot-id="${botId}"\n></script>`,
+    };
+  }
+
+  async function handleCopyEmbed(code: string) {
+    await navigator.clipboard.writeText(code);
+    setCopiedEmbed(true);
+    setTimeout(() => setCopiedEmbed(false), 2000);
+  }
+
+  function openEmbedModal(botId: string) {
+    setEmbedBotId(botId);
+    setEmbedTab("iframe");
+    setCopiedEmbed(false);
   }
 
   function openEditModal(bot: BotType) {
@@ -634,6 +660,14 @@ export default function DashboardPage() {
                     </button>
 
                     <button
+                      onClick={() => openEmbedModal(bot.bot_id)}
+                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-400 transition px-2.5 py-1.5 rounded-lg hover:bg-blue-500/10"
+                    >
+                      <Code className="w-3.5 h-3.5" />
+                      Embed
+                    </button>
+
+                    <button
                       onClick={() => openEditModal(bot)}
                       className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-purple-400 transition px-2.5 py-1.5 rounded-lg hover:bg-purple-500/10"
                     >
@@ -687,6 +721,90 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Embed Modal */}
+      {embedBotId && (() => {
+        const codes = getEmbedCodes(embedBotId);
+        const activeCode = embedTab === "iframe" ? codes.iframe : codes.widget;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-6">
+            <div className="bg-gray-900 border border-white/10 rounded-3xl w-full max-w-2xl">
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <Code className="w-5 h-5 text-blue-400" />
+                  <h2 className="text-xl font-bold">Embed Your Bot</h2>
+                </div>
+                <button onClick={() => setEmbedBotId(null)} className="text-gray-400 hover:text-white transition">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <p className="text-sm text-gray-400">
+                  Choose how you want to add this chatbot to your website.
+                </p>
+
+                {/* Tabs */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setEmbedTab("iframe"); setCopiedEmbed(false); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                      embedTab === "iframe"
+                        ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                        : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10"
+                    }`}
+                  >
+                    iframe (inline box)
+                  </button>
+                  <button
+                    onClick={() => { setEmbedTab("widget"); setCopiedEmbed(false); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                      embedTab === "widget"
+                        ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                        : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10"
+                    }`}
+                  >
+                    Floating bubble (script)
+                  </button>
+                </div>
+
+                {/* Description */}
+                {embedTab === "iframe" ? (
+                  <p className="text-xs text-gray-500">
+                    Paste this anywhere in your HTML to show the chat as a fixed-size box on the page.
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-500">
+                    Paste this just before <code className="text-purple-400">&lt;/body&gt;</code> to add a floating chat bubble to the bottom-right corner of your website.
+                  </p>
+                )}
+
+                {/* Code block */}
+                <div className="relative">
+                  <pre className="bg-black/50 border border-white/10 rounded-xl p-4 text-xs text-green-300 overflow-x-auto whitespace-pre-wrap break-all">
+                    {activeCode}
+                  </pre>
+                  <button
+                    onClick={() => handleCopyEmbed(activeCode)}
+                    className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-xs text-gray-300 transition"
+                  >
+                    {copiedEmbed ? (
+                      <><Check className="w-3.5 h-3.5 text-green-400" />Copied!</>
+                    ) : (
+                      <><Copy className="w-3.5 h-3.5" />Copy</>
+                    )}
+                  </button>
+                </div>
+
+                {/* Test tip */}
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3 text-xs text-purple-300">
+                  <strong>Test it:</strong> Create a blank <code>.html</code> file, paste the code inside a <code>&lt;body&gt;</code> tag, and open it in your browser.
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Edit Bot Modal */}
       {editingBot && (
