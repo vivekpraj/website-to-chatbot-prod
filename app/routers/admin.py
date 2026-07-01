@@ -305,3 +305,25 @@ async def admin_delete_user(
     db.commit()
 
     return {"detail": f"User {user_id} deleted (and their bots)"}
+
+
+# ---------------------------------------------------
+# 6) SET BOT LIMIT FOR USER (ADMIN ONLY)
+# ---------------------------------------------------
+@router.patch("/users/{user_id}/bot-limit")
+def set_user_bot_limit(
+    user_id: int,
+    bot_limit: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    ensure_super_admin(current_user)
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.bot_limit = bot_limit
+    db.commit()
+
+    return {"detail": f"Bot limit for user {user_id} set to {bot_limit}"}

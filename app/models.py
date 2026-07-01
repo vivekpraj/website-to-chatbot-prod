@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .db import Base
@@ -18,6 +18,7 @@ class User(Base):
 
     # Role: superadmin / client
     role = Column(String, default="client")
+    bot_limit = Column(Integer, default=1)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 

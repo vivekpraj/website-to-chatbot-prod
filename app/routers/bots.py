@@ -137,11 +137,12 @@ async def create_bot(
         )
 
     # THEN check bot limit
-    if user_bot_count >= 1:
-        logger.warning(f"User {current_user.id} has reached bot limit ({user_bot_count}/1)")
+    bot_limit = current_user.bot_limit or 1
+    if user_bot_count >= bot_limit:
+        logger.warning(f"User {current_user.id} has reached bot limit ({user_bot_count}/{bot_limit})")
         raise HTTPException(
             status_code=400,
-            detail="You can only create 1 bot on the free plan. Upgrade to create more bots."
+            detail=f"You have reached your bot limit ({bot_limit}). Upgrade to create more bots."
         )
  
     # Create new bot in DB
