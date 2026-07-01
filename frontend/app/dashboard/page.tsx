@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   Bot, Plus, Globe, ExternalLink, Loader, CheckCircle,
   Clock, AlertCircle, LogOut, Users, LayoutDashboard,
-  Pencil, X, Copy, Trash2, Check, Code
+  Pencil, X, Copy, Trash2, Check, Code, MessageSquare
 } from "lucide-react";
 
 type BotType = {
@@ -15,6 +15,8 @@ type BotType = {
   website_url: string;
   status: string;
   created_at: string;
+  last_used_at?: string | null;
+  message_count?: number;
   bot_name?: string;
   greeting_message?: string;
   primary_color?: string;
@@ -644,6 +646,22 @@ export default function DashboardPage() {
                         <span className="truncate">{chatUrl}</span>
                         <ExternalLink className="w-3 h-3 flex-shrink-0" />
                       </a>
+                    </div>
+
+                    {/* Per-bot stats */}
+                    <div className="flex items-center gap-3 pt-1">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                        <MessageSquare className="w-3 h-3 text-purple-400" />
+                        <span>{bot.message_count ?? 0} messages</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                        <Clock className="w-3 h-3 text-orange-400" />
+                        <span>
+                          {bot.last_used_at
+                            ? new Date(bot.last_used_at).toLocaleDateString()
+                            : "Never used"}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
