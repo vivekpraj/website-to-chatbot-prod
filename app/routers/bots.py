@@ -129,6 +129,7 @@ async def create_bot(
         existing_bot.background_color = payload.background_color
         existing_bot.text_color = payload.text_color
         existing_bot.logo_url = payload.logo_url
+        existing_bot.show_branding = payload.show_branding
         db.commit()
         return schemas.BotCreateResponse(
             bot_id=existing_bot.bot_id,
@@ -161,6 +162,7 @@ async def create_bot(
     background_color=payload.background_color,
     text_color=payload.text_color,
     logo_url=payload.logo_url,
+    show_branding=payload.show_branding,
 )
  
     try:
@@ -353,6 +355,7 @@ def list_my_bots(
             background_color=b.background_color,
             text_color=b.text_color,
             logo_url=b.logo_url,
+            show_branding=b.show_branding if b.show_branding is not None else True,
     )
         for b in bots
     ]
@@ -382,6 +385,7 @@ def get_bot_public_details(
         "background_color": bot.background_color or "#ffffff",
         "text_color": bot.text_color or "#111827",
         "logo_url": bot.logo_url,
+        "show_branding": bot.show_branding if bot.show_branding is not None else True,
     }
 
 @router.get("/{bot_id}/status")

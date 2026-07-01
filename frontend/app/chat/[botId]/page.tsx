@@ -19,6 +19,7 @@ type BotConfig = {
   background_color: string;
   text_color: string;
   logo_url: string | null;
+  show_branding: boolean;
 };
 
 export default function ChatPage() {
@@ -35,6 +36,7 @@ export default function ChatPage() {
     background_color: "#ffffff",
     text_color: "#111827",
     logo_url: null,
+    show_branding: true,
   });
 
   useEffect(() => {
@@ -125,7 +127,9 @@ export default function ChatPage() {
               <h1 className="text-lg font-bold">
                 {botConfig.bot_name || "AI Assistant"}
               </h1>
-              <p className="text-xs opacity-50 font-mono">Powered by CustomBot</p>
+              {botConfig.show_branding && (
+                <p className="text-xs opacity-50 font-mono">Powered by CustomBot</p>
+              )}
             </div>
           </div>
         </div>

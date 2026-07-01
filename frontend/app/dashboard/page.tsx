@@ -38,6 +38,7 @@ export default function DashboardPage() {
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
   const [textColor, setTextColor] = useState("#111827");
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [showBranding, setShowBranding] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -156,6 +157,7 @@ export default function DashboardPage() {
           background_color: backgroundColor,
           text_color: textColor,
           logo_url: uploadedLogoUrl || null,
+          show_branding: showBranding,
         }),
       });
 
@@ -359,6 +361,20 @@ export default function DashboardPage() {
                         className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer"
                       />
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-300">Show "Powered by CustomBot"</p>
+                      <p className="text-xs text-gray-500">Disable this to white label your chatbot</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowBranding(!showBranding)}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${showBranding ? "bg-purple-600" : "bg-gray-600"}`}
+                    >
+                      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${showBranding ? "translate-x-7" : "translate-x-1"}`} />
+                    </button>
                   </div>
 
                   <button

@@ -52,6 +52,7 @@ class Bot(Base):
     background_color = Column(String, nullable=True, default="#ffffff")
     text_color = Column(String, nullable=True, default="#111827")
     logo_url = Column(String, nullable=True)
+    show_branding = Column(Boolean, default=True)
 
     owner = relationship("User", back_populates="bots")
 # -----------------------------

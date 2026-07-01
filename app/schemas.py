@@ -15,6 +15,7 @@ class BotCreateRequest(BaseModel):
     background_color: Optional[str] = "#ffffff"
     text_color: Optional[str] = "#111827"
     logo_url: Optional[str] = None
+    show_branding: Optional[bool] = True
 
 
 # -----------------------------
@@ -135,6 +136,7 @@ class BotSummary(BaseModel):
     background_color: Optional[str] = "#ffffff"
     text_color: Optional[str] = "#111827"
     logo_url: Optional[str] = None
+    show_branding: Optional[bool] = True
 
     class Config:
         from_attributes = True
