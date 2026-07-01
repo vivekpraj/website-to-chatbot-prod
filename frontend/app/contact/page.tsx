@@ -50,8 +50,8 @@ export default function ContactPage() {
           </p>
           <p className="text-gray-500 text-sm mt-2">
             Or email directly:{' '}
-            <a href="mailto:prajapati.vishal.2210@gmail.com" className="text-purple-400 hover:underline">
-              prajapati.vishal.2210@gmail.com
+            <a href="mailto:vivekpraja007@gmail.com" className="text-purple-400 hover:underline">
+              vivekpraja007@gmail.com
             </a>
           </p>
         </div>
