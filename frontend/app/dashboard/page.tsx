@@ -6,7 +6,8 @@ import { API_BASE_URL } from "@/lib/constants";
 import Link from "next/link";
 import {
   Bot, Plus, Globe, ExternalLink, Loader, CheckCircle,
-  Clock, AlertCircle, LogOut, Users, LayoutDashboard, Pencil, X
+  Clock, AlertCircle, LogOut, Users, LayoutDashboard,
+  Pencil, X, Copy, Trash2, Check
 } from "lucide-react";
 
 type BotType = {
@@ -20,7 +21,17 @@ type BotType = {
   background_color?: string;
   text_color?: string;
   logo_url?: string;
+  show_branding?: boolean;
 };
+
+const COLOR_THEMES = [
+  { name: "Ocean",    primary: "#2563eb", background: "#ffffff", text: "#111827" },
+  { name: "Midnight", primary: "#7c3aed", background: "#0f0f1a", text: "#f1f5f9" },
+  { name: "Forest",   primary: "#059669", background: "#f0fdf4", text: "#111827" },
+  { name: "Sunset",   primary: "#ea580c", background: "#fff7ed", text: "#1c1917" },
+  { name: "Rose",     primary: "#e11d48", background: "#fff1f2", text: "#111827" },
+  { name: "Charcoal", primary: "#334155", background: "#f8fafc", text: "#0f172a" },
+];
 
 const PROGRESS_STEPS = [
   { label: "🕷️ Crawling your website...", duration: 5000 },
@@ -30,81 +41,160 @@ const PROGRESS_STEPS = [
   { label: "⏳ Almost there, hang tight...", duration: 99999 },
 ];
 
+function BotPreview({
+  botName, greeting, primaryColor, bgColor, textColor, logoUrl,
+}: {
+  botName: string; greeting: string; primaryColor: string;
+  bgColor: string; textColor: string; logoUrl?: string | null;
+}) {
+  return (
+    <div
+      className="rounded-2xl overflow-hidden border shadow-xl text-left w-full"
+      style={{ backgroundColor: bgColor, borderColor: primaryColor + "44" }}
+    >
+      {/* Header */}
+      <div
+        className="px-4 py-3 flex items-center gap-2"
+        style={{ backgroundColor: primaryColor + "22", borderBottom: `1px solid ${primaryColor}33` }}
+      >
+        {logoUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={logoUrl} alt="logo" className="w-7 h-7 rounded-lg object-cover" />
+        ) : (
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
+            <Bot className="w-4 h-4 text-white" />
+          </div>
+        )}
+        <span className="font-semibold text-sm" style={{ color: textColor }}>
+          {botName || "AI Assistant"}
+        </span>
+      </div>
+
+      {/* Messages */}
+      <div className="p-3 space-y-2" style={{ backgroundColor: bgColor, minHeight: 90 }}>
+        <div className="flex justify-start">
+          <div
+            className="max-w-[80%] px-3 py-2 rounded-xl text-xs leading-relaxed"
+            style={{ backgroundColor: primaryColor + "18", border: `1px solid ${primaryColor}33`, color: textColor }}
+          >
+            {greeting || "Hi! How can I help you today?"}
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <div
+            className="max-w-[80%] px-3 py-2 rounded-xl text-xs leading-relaxed text-white"
+            style={{ backgroundColor: primaryColor }}
+          >
+            Tell me about your services
+          </div>
+        </div>
+      </div>
+
+      {/* Input */}
+      <div className="px-3 py-2 border-t" style={{ borderColor: primaryColor + "33", backgroundColor: bgColor }}>
+        <div
+          className="rounded-lg px-3 py-2 text-xs border"
+          style={{ borderColor: primaryColor + "44", color: textColor + "66", backgroundColor: bgColor }}
+        >
+          Ask a question...
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ThemePicker({
+  selected, onChange,
+}: { selected: number; onChange: (i: number) => void }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-300 mb-3">Color Theme</label>
+      <div className="grid grid-cols-3 gap-2">
+        {COLOR_THEMES.map((theme, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onChange(i)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-left ${
+              selected === i
+                ? "border-purple-500 bg-purple-500/10"
+                : "border-white/10 bg-white/5 hover:border-white/30"
+            }`}
+          >
+            <div className="flex gap-1 flex-shrink-0">
+              <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: theme.primary }} />
+              <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: theme.background }} />
+            </div>
+            <span className="text-xs text-gray-300 truncate">{theme.name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
+  const [bots, setBots] = useState<BotType[]>([]);
+  const [loadingBots, setLoadingBots] = useState(true);
+  const [role, setRole] = useState<string | null>(null);
+
+  // Create form state
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [botName, setBotName] = useState("");
   const [greetingMessage, setGreetingMessage] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#2563eb");
-  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
-  const [textColor, setTextColor] = useState("#111827");
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [selectedTheme, setSelectedTheme] = useState(0);
   const [showBranding, setShowBranding] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [bots, setBots] = useState<BotType[]>([]);
-  const [loadingBots, setLoadingBots] = useState(true);
-
-  const [role, setRole] = useState<string | null>(null);
-
-  // Edit bot state
-  const [editingBot, setEditingBot] = useState<BotType | null>(null);
-  const [editBotName, setEditBotName] = useState("");
-  const [editGreeting, setEditGreeting] = useState("");
-  const [editPrimaryColor, setEditPrimaryColor] = useState("#2563eb");
-  const [editBgColor, setEditBgColor] = useState("#ffffff");
-  const [editTextColor, setEditTextColor] = useState("#111827");
-  const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
-  const [editShowBranding, setEditShowBranding] = useState(true);
-  const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState("");
-
-  // Polling state
+  // Polling
   const [creatingBotId, setCreatingBotId] = useState<string | null>(null);
   const [progressStep, setProgressStep] = useState(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const stepTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Bot card actions
+  const [copiedBotId, setCopiedBotId] = useState<string | null>(null);
+  const [deletingBotId, setDeletingBotId] = useState<string | null>(null);
+
+  // Edit modal
+  const [editingBot, setEditingBot] = useState<BotType | null>(null);
+  const [editBotName, setEditBotName] = useState("");
+  const [editGreeting, setEditGreeting] = useState("");
+  const [editSelectedTheme, setEditSelectedTheme] = useState(0);
+  const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
+  const [editLogoPreviewUrl, setEditLogoPreviewUrl] = useState<string | null>(null);
+  const [editCurrentLogoUrl, setEditCurrentLogoUrl] = useState<string | null>(null);
+  const [editShowBranding, setEditShowBranding] = useState(true);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+
   useEffect(() => {
     const token = getToken();
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
-
+    if (!token) { window.location.href = "/login"; return; }
     setRole(getUserRole());
     fetchBots();
   }, []);
 
-  // Progress step auto-advance
   useEffect(() => {
     if (!creatingBotId) return;
-
     const step = PROGRESS_STEPS[progressStep];
     if (!step || progressStep >= PROGRESS_STEPS.length - 1) return;
-
-    stepTimerRef.current = setTimeout(() => {
-      setProgressStep((prev) => prev + 1);
-    }, step.duration);
-
-    return () => {
-      if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
-    };
+    stepTimerRef.current = setTimeout(() => setProgressStep(p => p + 1), step.duration);
+    return () => { if (stepTimerRef.current) clearTimeout(stepTimerRef.current); };
   }, [creatingBotId, progressStep]);
 
   async function fetchBots() {
     try {
-      const token = getToken();
       const res = await fetch(`${API_BASE_URL}/bots/my`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
       if (res.ok) setBots(data);
-    } catch {
-      console.error("Failed to fetch bots");
-    } finally {
-      setLoadingBots(false);
-    }
+    } catch { console.error("Failed to fetch bots"); }
+    finally { setLoadingBots(false); }
   }
 
   function startPolling(botId: string) {
@@ -112,16 +202,13 @@ export default function DashboardPage() {
       try {
         const res = await fetch(`${API_BASE_URL}/bots/${botId}/status`);
         const data = await res.json();
-
         if (data.status === "ready" || data.status === "failed") {
           stopPolling();
           setCreatingBotId(null);
           setProgressStep(0);
-          await fetchBots(); // refresh bot list
+          await fetchBots();
         }
-      } catch {
-        console.error("Polling error");
-      }
+      } catch { console.error("Polling error"); }
     }, 5000);
   }
 
@@ -134,11 +221,12 @@ export default function DashboardPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    const theme = COLOR_THEMES[selectedTheme];
 
     try {
       const token = getToken();
-
       let uploadedLogoUrl = "";
+
       if (logoFile) {
         const formData = new FormData();
         formData.append("file", logoFile);
@@ -148,62 +236,71 @@ export default function DashboardPage() {
           body: formData,
         });
         const uploadData = await uploadRes.json();
-        if (!uploadRes.ok) {
-          setError("Logo upload failed");
-          return;
-        }
+        if (!uploadRes.ok) { setError("Logo upload failed"); return; }
         uploadedLogoUrl = uploadData.logo_url;
       }
 
       const res = await fetch(`${API_BASE_URL}/bots/create`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           website_url: websiteUrl,
           bot_name: botName || null,
           greeting_message: greetingMessage || null,
-          primary_color: primaryColor,
-          background_color: backgroundColor,
-          text_color: textColor,
+          primary_color: theme.primary,
+          background_color: theme.background,
+          text_color: theme.text,
           logo_url: uploadedLogoUrl || null,
           show_branding: showBranding,
         }),
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.detail || "Failed to create bot");
-        return;
-      }
+      if (!res.ok) { setError(data.detail || "Failed to create bot"); return; }
 
       setWebsiteUrl("");
       setBotName("");
       setGreetingMessage("");
       setLogoFile(null);
+      setLogoPreviewUrl(null);
+      setSelectedTheme(0);
       setCreatingBotId(data.bot_id);
       setProgressStep(0);
       startPolling(data.bot_id);
+    } catch { setError("Something went wrong"); }
+    finally { setLoading(false); }
+  }
 
-    } catch {
-      setError("Something went wrong");
-    } finally {
-      setLoading(false);
-    }
+  async function handleDeleteBot(botId: string) {
+    if (!confirm("Delete this bot? This cannot be undone.")) return;
+    setDeletingBotId(botId);
+    try {
+      const res = await fetch(`${API_BASE_URL}/bots/${botId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) await fetchBots();
+    } catch { console.error("Delete failed"); }
+    finally { setDeletingBotId(null); }
+  }
+
+  async function handleCopyLink(botId: string) {
+    const url = `${window.location.origin}/chat/${botId}`;
+    await navigator.clipboard.writeText(url);
+    setCopiedBotId(botId);
+    setTimeout(() => setCopiedBotId(null), 2000);
   }
 
   function openEditModal(bot: BotType) {
     setEditingBot(bot);
     setEditBotName(bot.bot_name || "");
     setEditGreeting(bot.greeting_message || "");
-    setEditPrimaryColor(bot.primary_color || "#2563eb");
-    setEditBgColor(bot.background_color || "#ffffff");
-    setEditTextColor(bot.text_color || "#111827");
+    setEditCurrentLogoUrl(bot.logo_url || null);
     setEditLogoFile(null);
-    setEditShowBranding(true);
+    setEditLogoPreviewUrl(null);
+    const themeIdx = COLOR_THEMES.findIndex(t => t.primary === bot.primary_color);
+    setEditSelectedTheme(themeIdx >= 0 ? themeIdx : 0);
+    setEditShowBranding(bot.show_branding ?? true);
     setEditError("");
   }
 
@@ -212,11 +309,12 @@ export default function DashboardPage() {
     if (!editingBot) return;
     setEditLoading(true);
     setEditError("");
+    const theme = COLOR_THEMES[editSelectedTheme];
 
     try {
       const token = getToken();
+      let logoUrl = editCurrentLogoUrl;
 
-      let logoUrl = editingBot.logo_url || null;
       if (editLogoFile) {
         const formData = new FormData();
         formData.append("file", editLogoFile);
@@ -226,25 +324,19 @@ export default function DashboardPage() {
           body: formData,
         });
         const uploadData = await uploadRes.json();
-        if (!uploadRes.ok) {
-          setEditError("Logo upload failed");
-          return;
-        }
+        if (!uploadRes.ok) { setEditError("Logo upload failed"); return; }
         logoUrl = uploadData.logo_url;
       }
 
       const res = await fetch(`${API_BASE_URL}/bots/${editingBot.bot_id}/customize`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           bot_name: editBotName || null,
           greeting_message: editGreeting || null,
-          primary_color: editPrimaryColor,
-          background_color: editBgColor,
-          text_color: editTextColor,
+          primary_color: theme.primary,
+          background_color: theme.background,
+          text_color: theme.text,
           logo_url: logoUrl,
           show_branding: editShowBranding,
         }),
@@ -258,11 +350,8 @@ export default function DashboardPage() {
 
       setEditingBot(null);
       await fetchBots();
-    } catch {
-      setEditError("Something went wrong");
-    } finally {
-      setEditLoading(false);
-    }
+    } catch { setEditError("Something went wrong"); }
+    finally { setEditLoading(false); }
   }
 
   const getStatusIcon = (status: string) => {
@@ -277,6 +366,9 @@ export default function DashboardPage() {
     return "text-red-400 bg-red-500/10 border-red-500/20";
   };
 
+  const createTheme = COLOR_THEMES[selectedTheme];
+  const editTheme = COLOR_THEMES[editSelectedTheme];
+
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-black to-orange-900/20 pointer-events-none" />
@@ -285,29 +377,29 @@ export default function DashboardPage() {
 
       {/* Header */}
       <header className="relative border-b border-white/10 bg-black/50 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-orange-500 rounded-xl flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-orange-500 rounded-xl flex items-center justify-center">
+              <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent">
+            <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent">
               CustomBot
             </span>
           </div>
           <button
             onClick={logout}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition"
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition text-sm"
           >
             <LogOut className="w-4 h-4" />
-            Logout
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </header>
 
-      <main className="relative max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-          <p className="text-gray-400">
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Dashboard</h1>
+          <p className="text-gray-400 text-sm sm:text-base">
             Logged in as <span className="text-purple-400 font-medium">{role}</span>
           </p>
         </div>
@@ -315,28 +407,25 @@ export default function DashboardPage() {
         {/* Create Bot Section */}
         {role === "client" && (
           <div className="mb-12">
-            <div className="bg-gradient-to-br from-purple-900/20 to-orange-900/20 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
+            <div className="bg-gradient-to-br from-purple-900/20 to-orange-900/20 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center border border-purple-500/20">
-                  <Plus className="w-6 h-6 text-purple-400" />
+                <div className="w-11 h-11 bg-purple-500/10 rounded-xl flex items-center justify-center border border-purple-500/20">
+                  <Plus className="w-5 h-5 text-purple-400" />
                 </div>
-                <h2 className="text-2xl font-bold">Create New Bot</h2>
+                <h2 className="text-xl sm:text-2xl font-bold">Create New Bot</h2>
               </div>
 
               {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-4">
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm">
                   {error}
                 </div>
               )}
 
-              {/* Progress UI */}
               {creatingBotId && (
                 <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-6 mb-6">
                   <div className="flex items-center gap-3 mb-4">
                     <Loader className="w-5 h-5 text-purple-400 animate-spin" />
-                    <p className="text-purple-300 font-medium">
-                      {PROGRESS_STEPS[progressStep]?.label}
-                    </p>
+                    <p className="text-purple-300 font-medium">{PROGRESS_STEPS[progressStep]?.label}</p>
                   </div>
                   <div className="space-y-2">
                     {PROGRESS_STEPS.slice(0, -1).map((step, i) => (
@@ -358,125 +447,106 @@ export default function DashboardPage() {
               )}
 
               {!creatingBotId && (
-                <form onSubmit={handleCreateBot} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Website URL
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://example.com"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
-                      value={websiteUrl}
-                      onChange={(e) => setWebsiteUrl(e.target.value)}
-                      required
-                    />
-                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                      <Globe className="w-3 h-3" />
-                      Enter the website you want to create a chatbot for
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Bot Name <span className="text-gray-500">(optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Sharma Electronics Assistant"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
-                      value={botName}
-                      onChange={(e) => setBotName(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Greeting Message <span className="text-gray-500">(optional)</span>
-                    </label>
-                    <textarea
-                      placeholder="e.g. Hi! I'm here to help you with any questions about our products."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition resize-none"
-                      rows={3}
-                      value={greetingMessage}
-                      onChange={(e) => setGreetingMessage(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Brand Logo <span className="text-gray-500">(optional)</span>
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 focus:outline-none transition"
-                      onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col lg:flex-row gap-8">
+                  {/* Form */}
+                  <form onSubmit={handleCreateBot} className="flex-1 space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Primary Color</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Website URL</label>
                       <input
-                        type="color"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer"
+                        type="url"
+                        placeholder="https://example.com"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
+                        value={websiteUrl}
+                        onChange={(e) => setWebsiteUrl(e.target.value)}
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+                        <Globe className="w-3 h-3" />
+                        Enter the website you want to create a chatbot for
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Bot Name <span className="text-gray-500">(optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Sharma Electronics Assistant"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
+                        value={botName}
+                        onChange={(e) => setBotName(e.target.value)}
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Background</label>
-                      <input
-                        type="color"
-                        value={backgroundColor}
-                        onChange={(e) => setBackgroundColor(e.target.value)}
-                        className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Text Color</label>
-                      <input
-                        type="color"
-                        value={textColor}
-                        onChange={(e) => setTextColor(e.target.value)}
-                        className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-300">Show "Powered by CustomBot"</p>
-                      <p className="text-xs text-gray-500">Disable this to white label your chatbot</p>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Greeting Message <span className="text-gray-500">(optional)</span>
+                      </label>
+                      <textarea
+                        placeholder="e.g. Hi! I'm here to help you with any questions about our products."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition resize-none"
+                        rows={2}
+                        value={greetingMessage}
+                        onChange={(e) => setGreetingMessage(e.target.value)}
+                      />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Brand Logo <span className="text-gray-500">(optional)</span>
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 focus:outline-none transition text-sm"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setLogoFile(file);
+                          setLogoPreviewUrl(file ? URL.createObjectURL(file) : null);
+                        }}
+                      />
+                    </div>
+
+                    <ThemePicker selected={selectedTheme} onChange={setSelectedTheme} />
+
+                    <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-300">Show &quot;Powered by CustomBot&quot;</p>
+                        <p className="text-xs text-gray-500">Disable to white label your chatbot</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowBranding(!showBranding)}
+                        className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${showBranding ? "bg-purple-600" : "bg-gray-600"}`}
+                      >
+                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${showBranding ? "translate-x-7" : "translate-x-1"}`} />
+                      </button>
+                    </div>
+
                     <button
-                      type="button"
-                      onClick={() => setShowBranding(!showBranding)}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${showBranding ? "bg-purple-600" : "bg-gray-600"}`}
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-gradient-to-r from-purple-600 to-orange-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
                     >
-                      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${showBranding ? "translate-x-7" : "translate-x-1"}`} />
+                      {loading ? <><Loader className="w-5 h-5 animate-spin" />Submitting...</> : <><Plus className="w-5 h-5" />Create Bot</>}
                     </button>
-                  </div>
+                  </form>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-purple-600 to-orange-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader className="w-5 h-5 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-5 h-5" />
-                        Create Bot
-                      </>
-                    )}
-                  </button>
-                </form>
+                  {/* Live Preview */}
+                  <div className="lg:w-72 xl:w-80">
+                    <p className="text-sm font-medium text-gray-300 mb-3">Live Preview</p>
+                    <BotPreview
+                      botName={botName}
+                      greeting={greetingMessage}
+                      primaryColor={createTheme.primary}
+                      bgColor={createTheme.background}
+                      textColor={createTheme.text}
+                      logoUrl={logoPreviewUrl}
+                    />
+                    <p className="text-xs text-gray-500 mt-2 text-center">Updates as you type</p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -484,8 +554,8 @@ export default function DashboardPage() {
 
         {/* Bots List */}
         <div>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <LayoutDashboard className="w-6 h-6 text-purple-400" />
+          <h2 className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2">
+            <LayoutDashboard className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
             Your Bots
           </h2>
 
@@ -504,37 +574,39 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
             {bots.map((bot) => {
               const chatUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/chat/${bot.bot_id}`;
               return (
                 <div
                   key={bot.bot_id}
-                  className="group bg-gradient-to-br from-purple-900/20 to-orange-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-purple-500/50 transition-all hover:scale-[1.02]"
+                  className="group bg-gradient-to-br from-purple-900/20 to-orange-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 hover:border-purple-500/50 transition-all"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-orange-500/20 rounded-xl flex items-center justify-center border border-purple-500/20">
-                        <Bot className="w-6 h-6 text-purple-400" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500/20 to-orange-500/20 rounded-xl flex items-center justify-center border border-purple-500/20">
+                        <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-white">Website Bot</h3>
+                        <h3 className="font-semibold text-white text-sm sm:text-base">
+                          {bot.bot_name || "Website Bot"}
+                        </h3>
                         <p className="text-xs text-gray-500">{new Date(bot.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(bot.status)}`}>
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(bot.status)}`}>
                       {getStatusIcon(bot.status)}
                       {bot.status}
                     </div>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2 mb-4">
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Website</p>
+                      <p className="text-xs text-gray-500 mb-0.5">Website</p>
                       <p className="text-sm text-gray-300 truncate">{bot.website_url}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Chat URL</p>
+                      <p className="text-xs text-gray-500 mb-0.5">Chat URL</p>
                       <a
                         href={chatUrl}
                         target="_blank"
@@ -547,13 +619,37 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-2 pt-3 border-t border-white/10">
+                    <button
+                      onClick={() => handleCopyLink(bot.bot_id)}
+                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-green-400 transition px-2.5 py-1.5 rounded-lg hover:bg-green-500/10"
+                    >
+                      {copiedBotId === bot.bot_id ? (
+                        <><Check className="w-3.5 h-3.5" />Copied!</>
+                      ) : (
+                        <><Copy className="w-3.5 h-3.5" />Copy Link</>
+                      )}
+                    </button>
+
                     <button
                       onClick={() => openEditModal(bot)}
-                      className="flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition"
+                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-purple-400 transition px-2.5 py-1.5 rounded-lg hover:bg-purple-500/10"
                     >
-                      <Pencil className="w-4 h-4" />
-                      Edit Customization
+                      <Pencil className="w-3.5 h-3.5" />
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteBot(bot.bot_id)}
+                      disabled={deletingBotId === bot.bot_id}
+                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-400 transition px-2.5 py-1.5 rounded-lg hover:bg-red-500/10 ml-auto disabled:opacity-50"
+                    >
+                      {deletingBotId === bot.bot_id ? (
+                        <Loader className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -565,24 +661,24 @@ export default function DashboardPage() {
         {/* Admin Controls */}
         {role === "super_admin" && (
           <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <Users className="w-6 h-6 text-orange-400" />
+            <h2 className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2">
+              <Users className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
               Admin Controls
             </h2>
-            <div className="grid md:grid-cols-3 gap-6">
-               <Link href="/admin" className="group bg-gradient-to-br from-green-900/20 to-green-600/10 backdrop-blur-xl border border-green-500/20 rounded-2xl p-6 hover:border-green-500/50 transition-all hover:scale-[1.02]">
-                  <LayoutDashboard className="w-8 h-8 text-green-400 mb-3" />
-                  <h3 className="text-xl font-bold mb-2">Admin Panel</h3>
-                  <p className="text-sm text-gray-400">Full platform overview and controls</p>
-                </Link>
-              <Link href="/admin/users" className="group bg-gradient-to-br from-purple-900/20 to-purple-600/10 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 hover:border-purple-500/50 transition-all hover:scale-[1.02]">
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+              <Link href="/admin" className="group bg-gradient-to-br from-green-900/20 to-green-600/10 backdrop-blur-xl border border-green-500/20 rounded-2xl p-6 hover:border-green-500/50 transition-all">
+                <LayoutDashboard className="w-8 h-8 text-green-400 mb-3" />
+                <h3 className="text-lg sm:text-xl font-bold mb-1">Admin Panel</h3>
+                <p className="text-sm text-gray-400">Full platform overview and controls</p>
+              </Link>
+              <Link href="/admin/users" className="group bg-gradient-to-br from-purple-900/20 to-purple-600/10 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 hover:border-purple-500/50 transition-all">
                 <Users className="w-8 h-8 text-purple-400 mb-3" />
-                <h3 className="text-xl font-bold mb-2">View All Users</h3>
+                <h3 className="text-lg sm:text-xl font-bold mb-1">View All Users</h3>
                 <p className="text-sm text-gray-400">Manage user accounts and permissions</p>
               </Link>
-              <Link href="/admin/bots" className="group bg-gradient-to-br from-orange-900/20 to-orange-600/10 backdrop-blur-xl border border-orange-500/20 rounded-2xl p-6 hover:border-orange-500/50 transition-all hover:scale-[1.02]">
+              <Link href="/admin/bots" className="group bg-gradient-to-br from-orange-900/20 to-orange-600/10 backdrop-blur-xl border border-orange-500/20 rounded-2xl p-6 hover:border-orange-500/50 transition-all">
                 <Bot className="w-8 h-8 text-orange-400 mb-3" />
-                <h3 className="text-xl font-bold mb-2">View All Bots</h3>
+                <h3 className="text-lg sm:text-xl font-bold mb-1">View All Bots</h3>
                 <p className="text-sm text-gray-400">Monitor all chatbots in the system</p>
               </Link>
             </div>
@@ -592,110 +688,113 @@ export default function DashboardPage() {
 
       {/* Edit Bot Modal */}
       {editingBot && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-gray-900 border border-white/10 rounded-3xl p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-6">
+          <div className="bg-gray-900 border border-white/10 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 sm:p-8 border-b border-white/10">
               <h2 className="text-xl font-bold">Edit Bot Customization</h2>
-              <button
-                onClick={() => setEditingBot(null)}
-                className="text-gray-400 hover:text-white transition"
-              >
+              <button onClick={() => setEditingBot(null)} className="text-gray-400 hover:text-white transition">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {editError && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm">
-                {editError}
-              </div>
-            )}
-
-            <form onSubmit={handleSaveEdit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Bot Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Sharma Electronics Assistant"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition"
-                  value={editBotName}
-                  onChange={(e) => setEditBotName(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Greeting Message</label>
-                <textarea
-                  placeholder="e.g. Hi! I'm here to help you with any questions."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition resize-none"
-                  rows={3}
-                  value={editGreeting}
-                  onChange={(e) => setEditGreeting(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Brand Logo</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 focus:outline-none transition"
-                  onChange={(e) => setEditLogoFile(e.target.files?.[0] || null)}
-                />
-                {editingBot.logo_url && !editLogoFile && (
-                  <p className="text-xs text-gray-500 mt-1">Current logo will be kept if no new file is selected</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Primary</label>
-                  <input type="color" value={editPrimaryColor} onChange={(e) => setEditPrimaryColor(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer" />
+            <div className="p-6 sm:p-8">
+              {editError && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm">
+                  {editError}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Background</label>
-                  <input type="color" value={editBgColor} onChange={(e) => setEditBgColor(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Text</label>
-                  <input type="color" value={editTextColor} onChange={(e) => setEditTextColor(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer" />
-                </div>
-              </div>
+              )}
 
-              <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-300">Show "Powered by CustomBot"</p>
-                  <p className="text-xs text-gray-500">Disable to white label your chatbot</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditShowBranding(!editShowBranding)}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${editShowBranding ? "bg-purple-600" : "bg-gray-600"}`}
-                >
-                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${editShowBranding ? "translate-x-7" : "translate-x-1"}`} />
-                </button>
-              </div>
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Edit Form */}
+                <form onSubmit={handleSaveEdit} className="flex-1 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Bot Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Sharma Electronics Assistant"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition"
+                      value={editBotName}
+                      onChange={(e) => setEditBotName(e.target.value)}
+                    />
+                  </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingBot(null)}
-                  className="flex-1 bg-white/5 border border-white/10 text-gray-300 py-3 rounded-xl font-medium hover:bg-white/10 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={editLoading}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-orange-600 text-white py-3 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-                >
-                  {editLoading ? <Loader className="w-4 h-4 animate-spin" /> : null}
-                  {editLoading ? "Saving..." : "Save Changes"}
-                </button>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Greeting Message</label>
+                    <textarea
+                      placeholder="e.g. Hi! I'm here to help you."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition resize-none"
+                      rows={2}
+                      value={editGreeting}
+                      onChange={(e) => setEditGreeting(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Brand Logo</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 focus:outline-none transition text-sm"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setEditLogoFile(file);
+                        setEditLogoPreviewUrl(file ? URL.createObjectURL(file) : null);
+                      }}
+                    />
+                    {editCurrentLogoUrl && !editLogoFile && (
+                      <p className="text-xs text-gray-500 mt-1">Current logo kept unless you upload a new one</p>
+                    )}
+                  </div>
+
+                  <ThemePicker selected={editSelectedTheme} onChange={setEditSelectedTheme} />
+
+                  <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-300">Show &quot;Powered by CustomBot&quot;</p>
+                      <p className="text-xs text-gray-500">Disable to white label</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditShowBranding(!editShowBranding)}
+                      className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editShowBranding ? "bg-purple-600" : "bg-gray-600"}`}
+                    >
+                      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${editShowBranding ? "translate-x-7" : "translate-x-1"}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingBot(null)}
+                      className="flex-1 bg-white/5 border border-white/10 text-gray-300 py-3 rounded-xl font-medium hover:bg-white/10 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={editLoading}
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-orange-600 text-white py-3 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                    >
+                      {editLoading && <Loader className="w-4 h-4 animate-spin" />}
+                      {editLoading ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Edit Preview */}
+                <div className="lg:w-64 xl:w-72">
+                  <p className="text-sm font-medium text-gray-300 mb-3">Live Preview</p>
+                  <BotPreview
+                    botName={editBotName}
+                    greeting={editGreeting}
+                    primaryColor={editTheme.primary}
+                    bgColor={editTheme.background}
+                    textColor={editTheme.text}
+                    logoUrl={editLogoPreviewUrl || editCurrentLogoUrl}
+                  />
+                </div>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

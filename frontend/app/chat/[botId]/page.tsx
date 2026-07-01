@@ -1,11 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { API_BASE_URL } from "@/lib/constants";
 import { Bot, Send, Loader, AlertCircle, Sparkles } from "lucide-react";
 import Image from "next/image";
-import { useEffect } from "react";
+
+function MarkdownText({ text, color }: { text: string; color: string }) {
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+  let listItems: string[] = [];
+
+  function flushList() {
+    if (listItems.length === 0) return;
+    elements.push(
+      <ul key={elements.length} className="list-disc list-inside space-y-1 my-1">
+        {listItems.map((item, i) => (
+          <li key={i}>{renderInline(item)}</li>
+        ))}
+      </ul>
+    );
+    listItems = [];
+  }
+
+  function renderInline(str: string): React.ReactNode {
+    const parts = str.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**"))
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      if (part.startsWith("*") && part.endsWith("*"))
+        return <em key={i}>{part.slice(1, -1)}</em>;
+      if (part.startsWith("`") && part.endsWith("`"))
+        return <code key={i} className="px-1 rounded text-xs font-mono" style={{ backgroundColor: color + "22" }}>{part.slice(1, -1)}</code>;
+      return part;
+    });
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const bulletMatch = line.match(/^[-*]\s+(.*)/);
+    const numberedMatch = line.match(/^\d+\.\s+(.*)/);
+
+    if (bulletMatch || numberedMatch) {
+      listItems.push((bulletMatch || numberedMatch)![1]);
+    } else {
+      flushList();
+      if (line.startsWith("### ")) {
+        elements.push(<p key={i} className="font-bold text-sm mt-2">{renderInline(line.slice(4))}</p>);
+      } else if (line.startsWith("## ")) {
+        elements.push(<p key={i} className="font-bold">{renderInline(line.slice(3))}</p>);
+      } else if (line.trim() === "") {
+        elements.push(<div key={i} className="h-2" />);
+      } else {
+        elements.push(<p key={i}>{renderInline(line)}</p>);
+      }
+    }
+  }
+  flushList();
+
+  return <div className="space-y-0.5 text-sm leading-relaxed">{elements}</div>;
+}
 
 type Message = {
   role: "user" | "assistant";
@@ -177,7 +231,7 @@ export default function ChatPage() {
                   </span>
                 </div>
               )}
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                <MarkdownText text={msg.content} color={botConfig.primary_color} />
               </div>
             </div>
           ))}

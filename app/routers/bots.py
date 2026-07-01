@@ -370,6 +370,28 @@ async def upload_bot_logo(
     url = upload_logo(contents, filename)
     return {"logo_url": url}
 
+@router.delete("/{bot_id}")
+async def delete_bot(
+    bot_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    bot = db.query(models.Bot).filter(models.Bot.bot_id == bot_id).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    if bot.user_id != current_user.id and current_user.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Not allowed to delete this bot")
+
+    try:
+        delete_collection(bot_id)
+    except Exception:
+        logger.warning(f"Could not delete Qdrant collection for bot {bot_id}")
+
+    db.delete(bot)
+    db.commit()
+    return {"detail": f"Bot {bot_id} deleted"}
+
+
 @router.put("/{bot_id}/customize")
 def update_bot_customization(
     bot_id: str,
