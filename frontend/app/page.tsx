@@ -34,7 +34,6 @@ export default function LandingPage() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-gray-400 hover:text-white transition-colors">Features</a>
-            <a href="#pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</a>
             {isLoggedIn ? (
               <a
                 href="/dashboard"
@@ -67,7 +66,6 @@ export default function LandingPage() {
           <div className="md:hidden bg-black/95 backdrop-blur-xl border-t border-white/10">
             <nav className="flex flex-col px-4 py-4 space-y-4">
               <a href="#features" className="text-gray-400 hover:text-white transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Features</a>
-              <a href="#pricing" className="text-gray-400 hover:text-white transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
               {isLoggedIn ? (
                 <a href="/dashboard" className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-orange-600 rounded-full font-semibold" onClick={() => setMobileMenuOpen(false)}>
                   <LayoutDashboard className="w-4 h-4" />
@@ -94,7 +92,7 @@ export default function LandingPage() {
                 Powered by Advanced AI Technology
               </span>
             </div>
-            
+
             <h1 className="text-4xl sm:text-6xl md:text-8xl font-black mb-6 sm:mb-8 leading-tight">
               <span className="bg-gradient-to-r from-white via-purple-200 to-orange-200 bg-clip-text text-transparent">
                 TURN YOUR CONTENT
@@ -104,27 +102,19 @@ export default function LandingPage() {
                 INTO CONVERSATIONS.
               </span>
             </h1>
-            
+
             <p className="text-base sm:text-xl text-gray-400 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed">
-              Transform any website into an intelligent AI chatbot in minutes. 
+              Transform any website into an intelligent AI chatbot in minutes.
               Instant answers, 24/7 availability, unlimited patience. That's CustomBot.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <a
-                href="/register"
-                className="group px-8 sm:px-10 py-4 sm:py-5 bg-gradient-to-r from-purple-600 to-orange-600 text-white text-base sm:text-lg font-bold rounded-full hover:shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all flex items-center justify-center gap-2"
-              >
-                Start 7 Days Trial
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition" />
-              </a>
-              <a
-                href="#demo"
-                className="px-8 sm:px-10 py-4 sm:py-5 bg-white/5 backdrop-blur-sm border border-white/10 text-white text-base sm:text-lg font-bold rounded-full hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-              >
-                Watch Demo
-              </a>
-            </div>
+
+            <a
+              href="/register"
+              className="group inline-flex items-center gap-2 px-8 sm:px-10 py-4 sm:py-5 bg-gradient-to-r from-purple-600 to-orange-600 text-white text-base sm:text-lg font-bold rounded-full hover:shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all"
+            >
+              Get Started Free
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition" />
+            </a>
           </div>
 
           {/* Feature Cards */}
@@ -175,28 +165,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Stats Section */}
-          <div className="grid grid-cols-3 gap-4 sm:gap-8 mb-20 sm:mb-32">
-            <div className="text-center">
-              <div className="text-3xl sm:text-6xl font-black bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent mb-1 sm:mb-2">
-                10K+
-              </div>
-              <div className="text-gray-400 text-xs sm:text-lg">Active Bots</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-6xl font-black bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent mb-1 sm:mb-2">
-                99.9%
-              </div>
-              <div className="text-gray-400 text-xs sm:text-lg">Uptime</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-6xl font-black bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent mb-1 sm:mb-2">
-                24/7
-              </div>
-              <div className="text-gray-400 text-xs sm:text-lg">Support</div>
-            </div>
-          </div>
-
           {/* CTA Section */}
           <div className="text-center">
             <div className="max-w-4xl mx-auto p-8 sm:p-16 bg-gradient-to-br from-purple-900/30 to-orange-900/30 backdrop-blur-xl rounded-3xl border border-white/10 relative overflow-hidden">
@@ -242,17 +210,6 @@ export default function LandingPage() {
             <p className="text-gray-500 text-sm sm:text-base">
               © 2026 CustomBot. All rights reserved.
             </p>
-            <div className="flex gap-4 sm:gap-8">
-              <a href="#" className="text-gray-500 hover:text-purple-400 transition text-sm sm:text-base">
-                Privacy
-              </a>
-              <a href="#" className="text-gray-500 hover:text-purple-400 transition text-sm sm:text-base">
-                Terms
-              </a>
-              <a href="#" className="text-gray-500 hover:text-purple-400 transition text-sm sm:text-base">
-                Contact
-              </a>
-            </div>
           </div>
         </div>
       </footer>
