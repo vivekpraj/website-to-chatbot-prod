@@ -162,7 +162,7 @@ export default function ChatPage() {
 
       {/* Header */}
       <header className="relative border-b backdrop-blur-xl z-10" style={{ borderColor: botConfig.primary_color + "33", backgroundColor: botConfig.background_color }}>
-                <div className="max-w-4xl mx-auto px-6 py-4">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center gap-3">
             {botConfig.logo_url ? (
               <Image
@@ -191,7 +191,7 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div className="relative flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
                     {messages.length === 0 && (
             <div className="text-center py-12">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: botConfig.primary_color + "33", border: `1px solid ${botConfig.primary_color}55` }}>
@@ -214,8 +214,8 @@ export default function ChatPage() {
               }`}
             >
               <div
-                className={`max-w-2xl px-6 py-4 rounded-2xl ${
-                  msg.role === "user" ? "ml-12" : "mr-12"
+                className={`max-w-2xl px-4 py-3 rounded-2xl ${
+                  msg.role === "user" ? "ml-6 sm:ml-12" : "mr-6 sm:mr-12"
                 }`}
                 style={
                   msg.role === "user"
@@ -238,7 +238,7 @@ export default function ChatPage() {
 
           {loading && (
             <div className="flex justify-start">
-              <div className="max-w-2xl px-6 py-4 rounded-2xl mr-12" style={{ backgroundColor: botConfig.primary_color + "15", border: `1px solid ${botConfig.primary_color}33` }}>
+              <div className="max-w-2xl px-4 py-3 rounded-2xl mr-6 sm:mr-12" style={{ backgroundColor: botConfig.primary_color + "15", border: `1px solid ${botConfig.primary_color}33` }}>
                 <div className="flex items-center gap-3">
                   <Loader className="w-5 h-5 animate-spin" style={{ color: botConfig.primary_color }} />
                   <span className="text-sm" style={{ color: botConfig.text_color }}>AI is thinking...</span>
@@ -249,7 +249,7 @@ export default function ChatPage() {
 
           {error && (
             <div className="flex justify-center">
-              <div className="max-w-2xl px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 backdrop-blur-xl">
+              <div className="max-w-2xl px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20 backdrop-blur-xl">
                 <div className="flex items-center gap-3">
                   <AlertCircle className="w-5 h-5 text-red-400" />
                   <span className="text-sm text-red-400">{error}</span>
@@ -262,25 +262,25 @@ export default function ChatPage() {
 
       {/* Input */}
       <div className="relative border-t" style={{ borderColor: botConfig.primary_color + "33", backgroundColor: botConfig.background_color }}>
-        <form onSubmit={sendMessage} className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex gap-3">
+        <form onSubmit={sendMessage} className="max-w-4xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex gap-2">
             <input
               type="text"
               placeholder="Ask a question..."
-               className="flex-1 rounded-xl px-6 py-4 focus:outline-none transition border"
+              className="flex-1 min-w-0 rounded-xl px-4 py-3 focus:outline-none transition border text-sm"
               style={{ backgroundColor: botConfig.background_color, color: botConfig.text_color, borderColor: botConfig.primary_color + "66" }}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
             />
-                        <button
+            <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="text-white px-8 py-4 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] flex items-center gap-2"
+              className="text-white px-4 py-3 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] flex items-center gap-1.5 flex-shrink-0"
               style={{ backgroundColor: botConfig.primary_color }}
             >
-              <Send className="w-5 h-5" />
-              Send
+              <Send className="w-4 h-4" />
+              <span className="hidden sm:inline text-sm">Send</span>
             </button>
           </div>
         </form>

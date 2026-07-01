@@ -60,7 +60,10 @@
   var iframe = document.createElement("iframe");
   iframe.src = chatUrl;
   iframe.title = "CustomBot Chat";
-  iframe.style.cssText = "width:100%;height:100%;border:none;";
+  iframe.setAttribute("scrolling", "no");
+  iframe.setAttribute("width", "380");
+  iframe.setAttribute("height", "560");
+  iframe.style.cssText = "width:100%;height:100%;border:none;overflow:hidden;display:block;";
   container.appendChild(iframe);
 
   /* ── Toggle ── */
@@ -90,12 +93,16 @@
       container.style.bottom = "0";
       container.style.right = "0";
       container.style.borderRadius = "0";
+      iframe.setAttribute("width", String(window.innerWidth));
+      iframe.setAttribute("height", String(window.innerHeight));
     } else {
       container.style.width = "380px";
       container.style.height = "560px";
       container.style.bottom = "96px";
       container.style.right = "24px";
       container.style.borderRadius = "16px";
+      iframe.setAttribute("width", "380");
+      iframe.setAttribute("height", "560");
     }
   }
   applyMobileStyles();

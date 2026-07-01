@@ -300,7 +300,7 @@ export default function DashboardPage() {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const chatUrl = `${origin}/chat/${botId}`;
     return {
-      iframe: `<!-- CustomBot embed -->\n<div style="position:fixed; bottom:24px; right:24px; width:400px; height:580px; border-radius:16px; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.25); z-index:9999; border:1px solid rgba(0,0,0,0.1);">\n  <iframe\n    src="${chatUrl}"\n    width="100%"\n    height="100%"\n    style="border:none;"\n    title="AI Chat"\n  ></iframe>\n</div>`,
+      iframe: `<!-- CustomBot embed -->\n<div style="position:fixed; bottom:24px; right:24px; width:400px; height:580px; border-radius:16px; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.25); z-index:9999; border:1px solid rgba(0,0,0,0.1);">\n  <iframe\n    src="${chatUrl}"\n    width="400"\n    height="580"\n    scrolling="no"\n    style="border:none; overflow:hidden; display:block;"\n    title="AI Chat"\n  ></iframe>\n</div>`,
       widget: `<!-- CustomBot floating bubble -->\n<script\n  src="${origin}/widget.js"\n  data-bot-id="${botId}"\n></script>`,
     };
   }
