@@ -520,7 +520,7 @@ export default function DashboardPage() {
                         onClick={() => setShowBranding(!showBranding)}
                         className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${showBranding ? "bg-purple-600" : "bg-gray-600"}`}
                       >
-                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${showBranding ? "translate-x-7" : "translate-x-1"}`} />
+                        <span className={`absolute top-1 left-0 w-4 h-4 bg-white rounded-full transition-transform ${showBranding ? "translate-x-7" : "translate-x-1"}`} />
                       </button>
                     </div>
 
@@ -758,7 +758,7 @@ export default function DashboardPage() {
                       onClick={() => setEditShowBranding(!editShowBranding)}
                       className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editShowBranding ? "bg-purple-600" : "bg-gray-600"}`}
                     >
-                      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${editShowBranding ? "translate-x-7" : "translate-x-1"}`} />
+                      <span className={`absolute top-1 left-0 w-4 h-4 bg-white rounded-full transition-transform ${editShowBranding ? "translate-x-7" : "translate-x-1"}`} />
                     </button>
                   </div>
 
