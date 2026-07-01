@@ -62,10 +62,11 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ name: editName, bot_limit: editBotLimit }),
       });
-      if (!res.ok) { alert("Failed to save changes"); return; }
+      const data = await res.json();
+      if (!res.ok) { alert(`Error ${res.status}: ${JSON.stringify(data)}`); return; }
       setEditingId(null);
       await fetchUsers();
-    } catch { alert("Something went wrong"); }
+    } catch (e) { alert(`Network error: ${e}`); }
     finally { setSaving(false); }
   }
 
