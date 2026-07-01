@@ -54,11 +54,41 @@ def list_users(
                 name=u.name,
                 role=u.role,
                 bot_count=bot_count,
+                bot_limit=u.bot_limit or 1,
                 created_at=u.created_at,
             )
         )
 
     return out
+
+
+# ---------------------------------------------------
+# 1b) EDIT USER (ADMIN ONLY)
+# ---------------------------------------------------
+@router.patch("/users/{user_id}")
+def update_user(
+    user_id: int,
+    payload: schemas.AdminUserUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    ensure_super_admin(current_user)
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if payload.name is not None:
+        user.name = payload.name
+    if payload.role is not None:
+        if payload.role not in ("client", "super_admin"):
+            raise HTTPException(status_code=400, detail="Role must be 'client' or 'super_admin'")
+        user.role = payload.role
+    if payload.bot_limit is not None:
+        user.bot_limit = payload.bot_limit
+
+    db.commit()
+    return {"detail": f"User {user_id} updated"}
 
 
 # ---------------------------------------------------

@@ -386,13 +386,19 @@ export default function DashboardPage() {
               CustomBot
             </span>
           </div>
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition text-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <a href="/" className="flex items-center gap-1.5 text-gray-400 hover:text-white transition text-sm">
+              <Globe className="w-4 h-4" />
+              <span className="hidden sm:inline">Home</span>
+            </a>
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 text-gray-400 hover:text-white transition text-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -510,18 +516,14 @@ export default function DashboardPage() {
 
                     <ThemePicker selected={selectedTheme} onChange={setSelectedTheme} />
 
-                    <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3 opacity-60">
                       <div>
                         <p className="text-sm font-medium text-gray-300">Show &quot;Powered by CustomBot&quot;</p>
-                        <p className="text-xs text-gray-500">Disable to white label your chatbot</p>
+                        <p className="text-xs text-orange-400">Remove branding · <a href="#pricing" className="underline hover:text-orange-300">Get a paid plan</a></p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowBranding(!showBranding)}
-                        className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${showBranding ? "bg-purple-600" : "bg-gray-600"}`}
-                      >
-                        <span className={`absolute top-1 left-0 w-4 h-4 bg-white rounded-full transition-transform ${showBranding ? "translate-x-7" : "translate-x-1"}`} />
-                      </button>
+                      <div className="relative w-12 h-6 rounded-full bg-purple-600 flex-shrink-0 cursor-not-allowed">
+                        <span className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full translate-x-7" />
+                      </div>
                     </div>
 
                     <button
@@ -748,18 +750,14 @@ export default function DashboardPage() {
 
                   <ThemePicker selected={editSelectedTheme} onChange={setEditSelectedTheme} />
 
-                  <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3 opacity-60">
                     <div>
                       <p className="text-sm font-medium text-gray-300">Show &quot;Powered by CustomBot&quot;</p>
-                      <p className="text-xs text-gray-500">Disable to white label</p>
+                      <p className="text-xs text-orange-400">Remove branding · <a href="#pricing" className="underline hover:text-orange-300">Get a paid plan</a></p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setEditShowBranding(!editShowBranding)}
-                      className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${editShowBranding ? "bg-purple-600" : "bg-gray-600"}`}
-                    >
-                      <span className={`absolute top-1 left-0 w-4 h-4 bg-white rounded-full transition-transform ${editShowBranding ? "translate-x-7" : "translate-x-1"}`} />
-                    </button>
+                    <div className="relative w-12 h-6 rounded-full bg-purple-600 flex-shrink-0 cursor-not-allowed">
+                      <span className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full translate-x-7" />
+                    </div>
                   </div>
 
                   <div className="flex gap-3 pt-2">

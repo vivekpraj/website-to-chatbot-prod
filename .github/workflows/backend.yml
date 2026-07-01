@@ -51,6 +51,7 @@ jobs:
       - name: Test imports with dummy key
         env:
           GEMINI_API_KEY: "dummy-key-for-ci-testing"
+          DATABASE_URL: "postgresql://dummy:dummy@localhost/dummy"
           CI: "true"
         run: |
           echo "Environment check:"

@@ -98,10 +98,17 @@ class AdminUserSummary(BaseModel):
     name: str
     role: str
     bot_count: int
+    bot_limit: int
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class AdminUserUpdate(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+    bot_limit: Optional[int] = None
 
 
 # ---------- ADMIN: BOT SUMMARY ----------

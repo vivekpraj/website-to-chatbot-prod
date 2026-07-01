@@ -1,10 +1,16 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Bot, Sparkles, Zap, MessageSquare, ArrowRight, Globe, Code, Menu, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bot, Sparkles, Zap, MessageSquare, ArrowRight, Globe, Menu, X, LayoutDashboard } from 'lucide-react';
+import { getToken } from '@/lib/auth';
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(!!getToken());
+  }, []);
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
@@ -27,21 +33,24 @@ export default function LandingPage() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-gray-400 hover:text-white transition-colors">
-              Features
-            </a>
-            <a href="#pricing" className="text-gray-400 hover:text-white transition-colors">
-              Pricing
-            </a>
-            <a href="/login" className="text-gray-400 hover:text-white transition-colors">
-              Login
-            </a>
-            <a 
-              href="/register"
-              className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-orange-600 rounded-full hover:shadow-lg hover:shadow-purple-500/50 hover:scale-105 transition-all font-semibold"
-            >
-              Get Started
-            </a>
+            <a href="#features" className="text-gray-400 hover:text-white transition-colors">Features</a>
+            <a href="#pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</a>
+            {isLoggedIn ? (
+              <a
+                href="/dashboard"
+                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-orange-600 rounded-full hover:shadow-lg hover:shadow-purple-500/50 hover:scale-105 transition-all font-semibold"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                Go to Dashboard
+              </a>
+            ) : (
+              <>
+                <a href="/login" className="text-gray-400 hover:text-white transition-colors">Login</a>
+                <a href="/register" className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-orange-600 rounded-full hover:shadow-lg hover:shadow-purple-500/50 hover:scale-105 transition-all font-semibold">
+                  Get Started
+                </a>
+              </>
+            )}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -57,34 +66,19 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-black/95 backdrop-blur-xl border-t border-white/10">
             <nav className="flex flex-col px-4 py-4 space-y-4">
-              <a 
-                href="#features" 
-                className="text-gray-400 hover:text-white transition-colors py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Features
-              </a>
-              <a 
-                href="#pricing" 
-                className="text-gray-400 hover:text-white transition-colors py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Pricing
-              </a>
-              <a 
-                href="/login" 
-                className="text-gray-400 hover:text-white transition-colors py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Login
-              </a>
-              <a 
-                href="/register"
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-orange-600 rounded-full text-center font-semibold"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Get Started
-              </a>
+              <a href="#features" className="text-gray-400 hover:text-white transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Features</a>
+              <a href="#pricing" className="text-gray-400 hover:text-white transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
+              {isLoggedIn ? (
+                <a href="/dashboard" className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-orange-600 rounded-full font-semibold" onClick={() => setMobileMenuOpen(false)}>
+                  <LayoutDashboard className="w-4 h-4" />
+                  Go to Dashboard
+                </a>
+              ) : (
+                <>
+                  <a href="/login" className="text-gray-400 hover:text-white transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Login</a>
+                  <a href="/register" className="px-6 py-3 bg-gradient-to-r from-purple-600 to-orange-600 rounded-full text-center font-semibold" onClick={() => setMobileMenuOpen(false)}>Get Started</a>
+                </>
+              )}
             </nav>
           </div>
         )}
