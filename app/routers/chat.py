@@ -75,34 +75,39 @@ async def chat_with_bot(
         )
 
 
-    # 2️⃣ Embed user question
-    embeddings = await embed_text([payload.message])
+    # 2️⃣ Sanitize user input
+    user_input = payload.message.strip()[:500]
+    if not user_input:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+    # 3️⃣ Embed user question
+    embeddings = await embed_text([user_input])
     query_vec = embeddings[0]
 
-    # 3️⃣ Retrieve top chunks + metadata from Chroma
+    # 4️⃣ Retrieve top chunks + metadata from Qdrant
     chunks, metadatas = await retrieve_chunks(bot_id, query_vec, top_k=3)
 
     if not chunks:
-        logger.warning(f"No chunks retrieved from Chroma for bot {bot_id}")
+        logger.warning(f"No chunks retrieved from Qdrant for bot {bot_id}")
         raise HTTPException(
             status_code=500, detail="No chunks retrieved from vector database"
         )
 
     logger.info(f"Retrieved {len(chunks)} chunks for RAG context.")
 
-    # 4️⃣ Build RAG prompt
-    prompt = build_rag_prompt(chunks, payload.message)
+    # 5️⃣ Build RAG prompt (returns system + user separately)
+    system_prompt, user_message = build_rag_prompt(chunks, user_input)
 
-    # 5️⃣ Generate final answer
+    # 6️⃣ Generate final answer
     try:
-        answer = await generate_answer(prompt)
+        answer = await generate_answer(system_prompt, user_message)
     except AIQuotaError:
         raise HTTPException(
             status_code=429,
             detail="AI service is temporarily unavailable. Please try again later.",
     )
 
-    # 6️⃣ Shape source_chunks for response
+    # 7️⃣ Shape source_chunks for response
     source_chunks: list[schemas.SourceChunk] = []
     for text, meta in zip(chunks, metadatas):
         source_chunks.append(
@@ -112,7 +117,7 @@ async def chat_with_bot(
             )
         )
 
-    # 7️⃣ 🔹 METRICS + LOGGING BLOCK (this is the new part)
+    # 8️⃣ 🔹 METRICS + LOGGING BLOCK (this is the new part)
     try:
         now = datetime.utcnow()
         duration_ms = int((time.time() - start_time) * 1000)
@@ -147,7 +152,7 @@ async def chat_with_bot(
         # Don't break the chat if metrics fail
         logger.exception("Failed to update metrics / ChatLog")
 
-    # 8️⃣ Return chatbot reply + context
+    # 9️⃣ Return chatbot reply + context
     return schemas.ChatResponse(
         answer=answer,
         source_chunks=source_chunks,

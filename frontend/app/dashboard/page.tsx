@@ -6,7 +6,7 @@ import { API_BASE_URL } from "@/lib/constants";
 import Link from "next/link";
 import {
   Bot, Plus, Globe, ExternalLink, Loader, CheckCircle,
-  Clock, AlertCircle, LogOut, Users, LayoutDashboard
+  Clock, AlertCircle, LogOut, Users, LayoutDashboard, Pencil, X
 } from "lucide-react";
 
 type BotType = {
@@ -46,6 +46,18 @@ export default function DashboardPage() {
   const [loadingBots, setLoadingBots] = useState(true);
 
   const [role, setRole] = useState<string | null>(null);
+
+  // Edit bot state
+  const [editingBot, setEditingBot] = useState<BotType | null>(null);
+  const [editBotName, setEditBotName] = useState("");
+  const [editGreeting, setEditGreeting] = useState("");
+  const [editPrimaryColor, setEditPrimaryColor] = useState("#2563eb");
+  const [editBgColor, setEditBgColor] = useState("#ffffff");
+  const [editTextColor, setEditTextColor] = useState("#111827");
+  const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
+  const [editShowBranding, setEditShowBranding] = useState(true);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
 
   // Polling state
   const [creatingBotId, setCreatingBotId] = useState<string | null>(null);
@@ -180,6 +192,76 @@ export default function DashboardPage() {
       setError("Something went wrong");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function openEditModal(bot: BotType) {
+    setEditingBot(bot);
+    setEditBotName(bot.bot_name || "");
+    setEditGreeting(bot.greeting_message || "");
+    setEditPrimaryColor(bot.primary_color || "#2563eb");
+    setEditBgColor(bot.background_color || "#ffffff");
+    setEditTextColor(bot.text_color || "#111827");
+    setEditLogoFile(null);
+    setEditShowBranding(true);
+    setEditError("");
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingBot) return;
+    setEditLoading(true);
+    setEditError("");
+
+    try {
+      const token = getToken();
+
+      let logoUrl = editingBot.logo_url || null;
+      if (editLogoFile) {
+        const formData = new FormData();
+        formData.append("file", editLogoFile);
+        const uploadRes = await fetch(`${API_BASE_URL}/bots/upload-logo`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) {
+          setEditError("Logo upload failed");
+          return;
+        }
+        logoUrl = uploadData.logo_url;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/bots/${editingBot.bot_id}/customize`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          bot_name: editBotName || null,
+          greeting_message: editGreeting || null,
+          primary_color: editPrimaryColor,
+          background_color: editBgColor,
+          text_color: editTextColor,
+          logo_url: logoUrl,
+          show_branding: editShowBranding,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setEditError(data.detail || "Failed to save changes");
+        return;
+      }
+
+      setEditingBot(null);
+      await fetchBots();
+    } catch {
+      setEditError("Something went wrong");
+    } finally {
+      setEditLoading(false);
     }
   }
 
@@ -464,6 +546,16 @@ export default function DashboardPage() {
                       </a>
                     </div>
                   </div>
+
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <button
+                      onClick={() => openEditModal(bot)}
+                      className="flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Edit Customization
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -497,6 +589,116 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Edit Bot Modal */}
+      {editingBot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="bg-gray-900 border border-white/10 rounded-3xl p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Edit Bot Customization</h2>
+              <button
+                onClick={() => setEditingBot(null)}
+                className="text-gray-400 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editError && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm">
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Bot Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Sharma Electronics Assistant"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition"
+                  value={editBotName}
+                  onChange={(e) => setEditBotName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Greeting Message</label>
+                <textarea
+                  placeholder="e.g. Hi! I'm here to help you with any questions."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition resize-none"
+                  rows={3}
+                  value={editGreeting}
+                  onChange={(e) => setEditGreeting(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Brand Logo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 focus:outline-none transition"
+                  onChange={(e) => setEditLogoFile(e.target.files?.[0] || null)}
+                />
+                {editingBot.logo_url && !editLogoFile && (
+                  <p className="text-xs text-gray-500 mt-1">Current logo will be kept if no new file is selected</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Primary</label>
+                  <input type="color" value={editPrimaryColor} onChange={(e) => setEditPrimaryColor(e.target.value)}
+                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Background</label>
+                  <input type="color" value={editBgColor} onChange={(e) => setEditBgColor(e.target.value)}
+                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Text</label>
+                  <input type="color" value={editTextColor} onChange={(e) => setEditTextColor(e.target.value)}
+                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 cursor-pointer" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-300">Show "Powered by CustomBot"</p>
+                  <p className="text-xs text-gray-500">Disable to white label your chatbot</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditShowBranding(!editShowBranding)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${editShowBranding ? "bg-purple-600" : "bg-gray-600"}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${editShowBranding ? "translate-x-7" : "translate-x-1"}`} />
+                </button>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingBot(null)}
+                  className="flex-1 bg-white/5 border border-white/10 text-gray-300 py-3 rounded-xl font-medium hover:bg-white/10 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-orange-600 text-white py-3 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                >
+                  {editLoading ? <Loader className="w-4 h-4 animate-spin" /> : null}
+                  {editLoading ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

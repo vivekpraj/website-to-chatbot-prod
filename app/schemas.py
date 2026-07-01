@@ -122,6 +122,16 @@ class SaaSStats(BaseModel):
     total_bots: int
     total_messages: int
 
+class BotUpdateRequest(BaseModel):
+    bot_name: Optional[str] = None
+    greeting_message: Optional[str] = None
+    primary_color: Optional[str] = "#2563eb"
+    background_color: Optional[str] = "#ffffff"
+    text_color: Optional[str] = "#111827"
+    logo_url: Optional[str] = None
+    show_branding: Optional[bool] = True
+
+
 class BotSummary(BaseModel):
     bot_id: str
     website_url: str

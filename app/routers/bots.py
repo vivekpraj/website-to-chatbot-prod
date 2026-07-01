@@ -370,6 +370,31 @@ async def upload_bot_logo(
     url = upload_logo(contents, filename)
     return {"logo_url": url}
 
+@router.put("/{bot_id}/customize")
+def update_bot_customization(
+    bot_id: str,
+    payload: schemas.BotUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    bot = db.query(models.Bot).filter(models.Bot.bot_id == bot_id).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    if bot.user_id != current_user.id and current_user.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Not allowed to edit this bot")
+
+    bot.bot_name = payload.bot_name
+    bot.greeting_message = payload.greeting_message
+    bot.primary_color = payload.primary_color
+    bot.background_color = payload.background_color
+    bot.text_color = payload.text_color
+    bot.logo_url = payload.logo_url
+    bot.show_branding = payload.show_branding
+    db.commit()
+
+    return {"detail": "Bot updated successfully"}
+
+
 @router.get("/{bot_id}/public")
 def get_bot_public_details(
     bot_id: str,

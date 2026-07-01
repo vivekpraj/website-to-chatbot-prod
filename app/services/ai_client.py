@@ -15,21 +15,19 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "dummy-key")
 SITE_URL = os.getenv("SITE_URL", "https://website-to-chatbot-prod.vercel.app")
 SITE_NAME = os.getenv("SITE_NAME", "CustomBot")
 
-async def generate_answer(prompt: str) -> str:
+async def generate_answer(system_prompt: str, user_message: str) -> str:
     """
-    Sends prompt to Google Gemma 3 via OpenRouter (free tier).
+    Sends system + user messages to OpenRouter with proper role separation.
     """
     if not OPENROUTER_API_KEY or OPENROUTER_API_KEY == "dummy-key":
         raise Exception("OPENROUTER_API_KEY not configured properly")
-    
+
     try:
         payload = {
             "model": "nvidia/nemotron-3-super-120b-a12b:free",
             "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
             ]
         }
         
