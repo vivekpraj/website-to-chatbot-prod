@@ -47,7 +47,7 @@ export default function AdminUsersPage() {
   function startEdit(user: User) {
     setEditingId(user.id);
     setEditName(user.name);
-    setEditBotLimit(user.bot_limit);
+    setEditBotLimit(user.bot_limit || 1);
   }
 
   function cancelEdit() {
@@ -189,7 +189,7 @@ export default function AdminUsersPage() {
                     <div className="flex flex-wrap items-center gap-3">
                       <div className="flex items-center gap-1.5 text-sm text-gray-400 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
                         <Bot className="w-3.5 h-3.5" />
-                        <span>{user.bot_count}/{user.bot_limit} bots</span>
+                        <span>{user.bot_count}/{user.bot_limit || 1} bots</span>
                       </div>
 
                       <div className={`px-3 py-1 rounded-full text-xs font-medium border ${
