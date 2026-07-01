@@ -34,6 +34,7 @@ export default function LandingPage() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-gray-400 hover:text-white transition-colors">Features</a>
+            <a href="/pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</a>
             {isLoggedIn ? (
               <a
                 href="/dashboard"
@@ -66,6 +67,7 @@ export default function LandingPage() {
           <div className="md:hidden bg-black/95 backdrop-blur-xl border-t border-white/10">
             <nav className="flex flex-col px-4 py-4 space-y-4">
               <a href="#features" className="text-gray-400 hover:text-white transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Features</a>
+              <a href="/pricing" className="text-gray-400 hover:text-white transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
               {isLoggedIn ? (
                 <a href="/dashboard" className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-orange-600 rounded-full font-semibold" onClick={() => setMobileMenuOpen(false)}>
                   <LayoutDashboard className="w-4 h-4" />
@@ -210,6 +212,17 @@ export default function LandingPage() {
             <p className="text-gray-500 text-sm sm:text-base">
               © 2026 CustomBot. All rights reserved.
             </p>
+            <div className="flex gap-4 sm:gap-8">
+              <a href="/privacy" className="text-gray-500 hover:text-purple-400 transition text-sm sm:text-base">
+                Privacy
+              </a>
+              <a href="/pricing" className="text-gray-500 hover:text-purple-400 transition text-sm sm:text-base">
+                Pricing
+              </a>
+              <a href="/contact" className="text-gray-500 hover:text-purple-400 transition text-sm sm:text-base">
+                Contact
+              </a>
+            </div>
           </div>
         </div>
       </footer>
