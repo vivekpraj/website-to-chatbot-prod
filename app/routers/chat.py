@@ -7,6 +7,7 @@ import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from qdrant_client.http.exceptions import UnexpectedResponse
 
 from app.db import get_db
 from app import models, schemas
@@ -85,7 +86,15 @@ async def chat_with_bot(
     query_vec = embeddings[0]
 
     # 4️⃣ Retrieve top chunks + metadata from Qdrant
-    chunks, metadatas = await retrieve_chunks(bot_id, query_vec, top_k=3)
+    try:
+        chunks, metadatas = await retrieve_chunks(bot_id, query_vec, top_k=3)
+    except UnexpectedResponse as e:
+        if "404" in str(e):
+            raise HTTPException(
+                status_code=404,
+                detail="This bot's knowledge base was not found. Please delete and recreate the bot.",
+            )
+        raise
 
     if not chunks:
         logger.warning(f"No chunks retrieved from Qdrant for bot {bot_id}")

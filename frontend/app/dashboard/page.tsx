@@ -17,6 +17,7 @@ type BotType = {
   created_at: string;
   last_used_at?: string | null;
   message_count?: number;
+  error_message?: string | null;
   bot_name?: string;
   greeting_message?: string;
   primary_color?: string;
@@ -36,12 +37,12 @@ const COLOR_THEMES = [
 ];
 
 const PROGRESS_STEPS = [
-  { label: "🕷️ Crawling your website...", duration: 5000 },
-  { label: "📄 Reading and cleaning pages...", duration: 5000 },
-  { label: "🧠 Training your AI bot...", duration: 5000 },
-  { label: "💾 Saving to vector database...", duration: 5000 },
-  { label: "⏳ Almost there, hang tight...", duration: 99999 },
+  { label: "🕷️ Crawling your website...",          key: "crawling" },
+  { label: "🧠 Reading, chunking and embedding...", key: "embedding" },
+  { label: "💾 Saving to knowledge base...",        key: "saving" },
 ];
+
+const ACTIVE_STATUSES = ["processing", "crawling", "embedding", "saving"];
 
 function BotPreview({
   botName, greeting, primaryColor, bgColor, textColor, logoUrl,
@@ -154,8 +155,9 @@ export default function DashboardPage() {
   // Polling
   const [creatingBotId, setCreatingBotId] = useState<string | null>(null);
   const [progressStep, setProgressStep] = useState(0);
+  const [creatingBotError, setCreatingBotError] = useState<string | null>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
-  const stepTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoPollingRef = useRef<NodeJS.Timeout | null>(null);
 
   // Bot card actions
   const [copiedBotId, setCopiedBotId] = useState<string | null>(null);
@@ -185,13 +187,6 @@ export default function DashboardPage() {
     fetchBots();
   }, []);
 
-  useEffect(() => {
-    if (!creatingBotId) return;
-    const step = PROGRESS_STEPS[progressStep];
-    if (!step || progressStep >= PROGRESS_STEPS.length - 1) return;
-    stepTimerRef.current = setTimeout(() => setProgressStep(p => p + 1), step.duration);
-    return () => { if (stepTimerRef.current) clearTimeout(stepTimerRef.current); };
-  }, [creatingBotId, progressStep]);
 
   async function fetchBots() {
     try {
@@ -199,7 +194,30 @@ export default function DashboardPage() {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
-      if (res.ok) setBots(data);
+      if (res.ok) {
+        setBots(data);
+        const hasActive = (data as BotType[]).some(b => ACTIVE_STATUSES.includes(b.status));
+        if (hasActive && !autoPollingRef.current) {
+          autoPollingRef.current = setInterval(async () => {
+            try {
+              const r = await fetch(`${API_BASE_URL}/bots/my`, {
+                headers: { Authorization: `Bearer ${getToken()}` },
+              });
+              const d = await r.json();
+              if (r.ok) {
+                setBots(d);
+                if (!(d as BotType[]).some(b => ACTIVE_STATUSES.includes(b.status))) {
+                  clearInterval(autoPollingRef.current!);
+                  autoPollingRef.current = null;
+                }
+              }
+            } catch { console.error("Auto-poll error"); }
+          }, 3000);
+        } else if (!hasActive && autoPollingRef.current) {
+          clearInterval(autoPollingRef.current);
+          autoPollingRef.current = null;
+        }
+      }
     } catch { console.error("Failed to fetch bots"); }
     finally { setLoadingBots(false); }
   }
@@ -209,19 +227,27 @@ export default function DashboardPage() {
       try {
         const res = await fetch(`${API_BASE_URL}/bots/${botId}/status`);
         const data = await res.json();
+
+        // Drive progress step from real backend status
+        if (data.status === "crawling")  setProgressStep(0);
+        else if (data.status === "embedding") setProgressStep(1);
+        else if (data.status === "saving")    setProgressStep(2);
+
         if (data.status === "ready" || data.status === "failed") {
           stopPolling();
+          if (data.status === "failed") {
+            setCreatingBotError(data.error_message || "Bot creation failed. Please try again.");
+          }
           setCreatingBotId(null);
           setProgressStep(0);
           await fetchBots();
         }
       } catch { console.error("Polling error"); }
-    }, 5000);
+    }, 3000);
   }
 
   function stopPolling() {
     if (pollingRef.current) clearInterval(pollingRef.current);
-    if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
   }
 
   async function handleCreateBot(e: React.FormEvent) {
@@ -384,14 +410,21 @@ export default function DashboardPage() {
 
   const getStatusIcon = (status: string) => {
     if (status === "ready") return <CheckCircle className="w-4 h-4 text-green-400" />;
-    if (status === "processing") return <Clock className="w-4 h-4 text-yellow-400 animate-spin" />;
-    return <AlertCircle className="w-4 h-4 text-red-400" />;
+    if (status === "failed") return <AlertCircle className="w-4 h-4 text-red-400" />;
+    return <Clock className="w-4 h-4 text-yellow-400 animate-spin" />;
   };
 
   const getStatusColor = (status: string) => {
     if (status === "ready") return "text-green-400 bg-green-500/10 border-green-500/20";
-    if (status === "processing") return "text-yellow-400 bg-yellow-500/10 border-yellow-500/20";
-    return "text-red-400 bg-red-500/10 border-red-500/20";
+    if (status === "failed") return "text-red-400 bg-red-500/10 border-red-500/20";
+    return "text-yellow-400 bg-yellow-500/10 border-yellow-500/20";
+  };
+
+  const getStatusLabel = (status: string) => {
+    if (status === "crawling")  return "crawling";
+    if (status === "embedding") return "embedding";
+    if (status === "saving")    return "saving";
+    return status;
   };
 
   const createTheme = COLOR_THEMES[selectedTheme];
@@ -455,14 +488,32 @@ export default function DashboardPage() {
                 </div>
               )}
 
+              {creatingBotError && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-red-400 font-semibold mb-1">Bot creation failed</p>
+                      <p className="text-red-300 text-sm">{creatingBotError}</p>
+                      <button
+                        onClick={() => setCreatingBotError(null)}
+                        className="text-xs text-gray-500 hover:text-gray-300 mt-2 underline"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {creatingBotId && (
                 <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-6 mb-6">
                   <div className="flex items-center gap-3 mb-4">
                     <Loader className="w-5 h-5 text-purple-400 animate-spin" />
-                    <p className="text-purple-300 font-medium">{PROGRESS_STEPS[progressStep]?.label}</p>
+                    <p className="text-purple-300 font-medium">{PROGRESS_STEPS[progressStep]?.label ?? "Starting..."}</p>
                   </div>
-                  <div className="space-y-2">
-                    {PROGRESS_STEPS.slice(0, -1).map((step, i) => (
+                  <div className="space-y-3">
+                    {PROGRESS_STEPS.map((step, i) => (
                       <div key={i} className="flex items-center gap-3">
                         {i < progressStep ? (
                           <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
@@ -471,7 +522,7 @@ export default function DashboardPage() {
                         ) : (
                           <div className="w-4 h-4 rounded-full border border-gray-600 flex-shrink-0" />
                         )}
-                        <span className={`text-sm ${i <= progressStep ? "text-white" : "text-gray-500"}`}>
+                        <span className={`text-sm ${i < progressStep ? "text-green-300" : i === progressStep ? "text-white" : "text-gray-500"}`}>
                           {step.label}
                         </span>
                       </div>
@@ -626,7 +677,7 @@ export default function DashboardPage() {
                     </div>
                     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(bot.status)}`}>
                       {getStatusIcon(bot.status)}
-                      {bot.status}
+                      {getStatusLabel(bot.status)}
                     </div>
                   </div>
 
@@ -648,64 +699,107 @@ export default function DashboardPage() {
                       </a>
                     </div>
 
-                    {/* Per-bot stats */}
-                    <div className="flex items-center gap-3 pt-1">
-                      <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
-                        <MessageSquare className="w-3 h-3 text-purple-400" />
-                        <span>{bot.message_count ?? 0} messages</span>
+                    {/* Per-bot stats — only when ready */}
+                    {bot.status === "ready" && (
+                      <div className="flex items-center gap-3 pt-1">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                          <MessageSquare className="w-3 h-3 text-purple-400" />
+                          <span>{bot.message_count ?? 0} messages</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                          <Clock className="w-3 h-3 text-orange-400" />
+                          <span>
+                            {bot.last_used_at
+                              ? new Date(bot.last_used_at).toLocaleDateString()
+                              : "Never used"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
-                        <Clock className="w-3 h-3 text-orange-400" />
-                        <span>
-                          {bot.last_used_at
-                            ? new Date(bot.last_used_at).toLocaleDateString()
-                            : "Never used"}
+                    )}
+                  </div>
+
+                  {ACTIVE_STATUSES.includes(bot.status) ? (
+                    <div className="pt-3 border-t border-white/10 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Loader className="w-4 h-4 animate-spin text-purple-400 flex-shrink-0" />
+                        <span className="text-sm text-purple-300 font-medium">
+                          {bot.status === "crawling"   ? "🕷️ Crawling website..."
+                          : bot.status === "embedding" ? "🧠 Embedding content..."
+                          : bot.status === "saving"    ? "💾 Saving to knowledge base..."
+                          : "⏳ Starting pipeline..."}
                         </span>
                       </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-purple-500 to-orange-500 rounded-full transition-all duration-700"
+                          style={{ width: bot.status === "crawling" ? "25%" : bot.status === "embedding" ? "60%" : bot.status === "saving" ? "85%" : "10%" }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500">Updates automatically when ready.</p>
                     </div>
-                  </div>
+                  ) : bot.status === "failed" ? (
+                    <div className="pt-3 border-t border-white/10 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-red-400 font-medium">Training failed</p>
+                          {bot.error_message && (
+                            <p className="text-xs text-red-300/80 mt-0.5">{bot.error_message}</p>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteBot(bot.bot_id)}
+                        disabled={deletingBotId === bot.bot_id}
+                        className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition px-2.5 py-1.5 rounded-lg hover:bg-red-500/10 disabled:opacity-50"
+                      >
+                        {deletingBotId === bot.bot_id ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        Delete & retry
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 pt-3 border-t border-white/10">
+                      <button
+                        onClick={() => handleCopyLink(bot.bot_id)}
+                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-green-400 transition px-2.5 py-1.5 rounded-lg hover:bg-green-500/10"
+                      >
+                        {copiedBotId === bot.bot_id ? (
+                          <><Check className="w-3.5 h-3.5" />Copied!</>
+                        ) : (
+                          <><Copy className="w-3.5 h-3.5" />Copy Link</>
+                        )}
+                      </button>
 
-                  <div className="flex items-center gap-2 pt-3 border-t border-white/10">
-                    <button
-                      onClick={() => handleCopyLink(bot.bot_id)}
-                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-green-400 transition px-2.5 py-1.5 rounded-lg hover:bg-green-500/10"
-                    >
-                      {copiedBotId === bot.bot_id ? (
-                        <><Check className="w-3.5 h-3.5" />Copied!</>
-                      ) : (
-                        <><Copy className="w-3.5 h-3.5" />Copy Link</>
-                      )}
-                    </button>
+                      <button
+                        onClick={() => openEmbedModal(bot.bot_id)}
+                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-400 transition px-2.5 py-1.5 rounded-lg hover:bg-blue-500/10"
+                      >
+                        <Code className="w-3.5 h-3.5" />
+                        Embed
+                      </button>
 
-                    <button
-                      onClick={() => openEmbedModal(bot.bot_id)}
-                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-400 transition px-2.5 py-1.5 rounded-lg hover:bg-blue-500/10"
-                    >
-                      <Code className="w-3.5 h-3.5" />
-                      Embed
-                    </button>
+                      <button
+                        onClick={() => openEditModal(bot)}
+                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-purple-400 transition px-2.5 py-1.5 rounded-lg hover:bg-purple-500/10"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Edit
+                      </button>
 
-                    <button
-                      onClick={() => openEditModal(bot)}
-                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-purple-400 transition px-2.5 py-1.5 rounded-lg hover:bg-purple-500/10"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() => handleDeleteBot(bot.bot_id)}
-                      disabled={deletingBotId === bot.bot_id}
-                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-400 transition px-2.5 py-1.5 rounded-lg hover:bg-red-500/10 ml-auto disabled:opacity-50"
-                    >
-                      {deletingBotId === bot.bot_id ? (
-                        <Loader className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
-                      )}
-                      Delete
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => handleDeleteBot(bot.bot_id)}
+                        disabled={deletingBotId === bot.bot_id}
+                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-400 transition px-2.5 py-1.5 rounded-lg hover:bg-red-500/10 ml-auto disabled:opacity-50"
+                      >
+                        {deletingBotId === bot.bot_id ? (
+                          <Loader className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}

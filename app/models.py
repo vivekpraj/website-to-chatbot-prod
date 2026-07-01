@@ -40,6 +40,7 @@ class Bot(Base):
     website_url = Column(String, nullable=False)
 
     status = Column(String, default="processing")
+    error_message = Column(String, nullable=True)
     vector_index_path = Column(String, nullable=True)
     
     message_count = Column(Integer, default=0)

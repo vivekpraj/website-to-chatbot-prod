@@ -26,31 +26,32 @@ async def run_pipeline(bot_id: str, website_url: str, bot_db_id: int):
     db = next(get_db())
     try:
         bot = db.query(models.Bot).filter(models.Bot.id == bot_db_id).first()
- 
         logger.info(f"[PIPELINE] Starting for bot {bot_id}")
- 
+
         # 1️⃣ CRAWL
+        bot.status = "crawling"
+        bot.error_message = None
+        db.commit()
         page_texts = crawl_website(website_url, max_pages=10)
         if not page_texts:
-            raise Exception("No pages found or all pages were empty.")
- 
+            raise Exception("No pages found. The website may be empty, behind a login, or blocked the crawler.")
         logger.info(f"[PIPELINE] Crawled {len(page_texts)} pages.")
- 
+
+        # 2️⃣ CHUNK + EMBED
+        bot.status = "embedding"
+        db.commit()
+
         all_chunks = []
         all_embeddings = []
         all_metadatas = []
- 
-        # 2️⃣ CHUNK + EMBED
+
         for page_url, text in page_texts.items():
             logger.info(f"[PIPELINE] Processing page: {page_url}")
- 
             chunks = process_text_to_chunks(text)
             if not chunks:
                 logger.warning(f"[PIPELINE] No chunks for page: {page_url}")
                 continue
- 
             embeddings = await embed_text(chunks)
- 
             for c, e in zip(chunks, embeddings):
                 chunk_index = len(all_chunks)
                 all_chunks.append(c)
@@ -60,24 +61,27 @@ async def run_pipeline(bot_id: str, website_url: str, bot_db_id: int):
                     "page_url": page_url,
                     "chunk_index": chunk_index,
                 })
- 
+
         if not all_chunks:
-            raise Exception("No chunks generated from the entire website.")
- 
+            raise Exception("No content could be extracted from the website. Try a different URL.")
+
         # 3️⃣ SAVE TO QDRANT
+        bot.status = "saving"
+        db.commit()
         logger.info(f"[PIPELINE] Saving {len(all_chunks)} chunks for bot {bot_id}")
         await add_chunks_to_qdrant(bot_id, all_chunks, all_embeddings, all_metadatas)
- 
+
         # 4️⃣ MARK READY
         bot.status = "ready"
         db.commit()
         logger.info(f"[PIPELINE] Bot {bot_id} is READY!")
- 
+
     except Exception as e:
         logger.exception(f"[PIPELINE] Failed for bot {bot_id}: {e}")
         bot = db.query(models.Bot).filter(models.Bot.id == bot_db_id).first()
         if bot:
             bot.status = "failed"
+            bot.error_message = str(e)
             db.commit()
     finally:
         db.close()
@@ -93,7 +97,7 @@ def get_bot_status(
     bot = db.query(models.Bot).filter(models.Bot.bot_id == bot_id).first()
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
-    return {"status": bot.status, "bot_id": bot.bot_id}
+    return {"status": bot.status, "bot_id": bot.bot_id, "error_message": bot.error_message}
 
 @router.post("/create", response_model=schemas.BotCreateResponse)
 async def create_bot(
@@ -443,4 +447,4 @@ def get_bot_status(
     bot = db.query(models.Bot).filter(models.Bot.bot_id == bot_id).first()
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
-    return {"status": bot.status, "bot_id": bot.bot_id}
+    return {"status": bot.status, "bot_id": bot.bot_id, "error_message": bot.error_message}

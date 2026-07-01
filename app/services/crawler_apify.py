@@ -28,7 +28,7 @@ def crawl_website(start_url: str, max_pages: int = 5) -> Dict[str, str]:
     run = client.actor("apify/website-content-crawler").call(run_input=run_input)
 
     results = {}
-    for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+    for item in client.dataset(run.default_dataset_id).iterate_items():
         url = item.get("url")
         text = item.get("text") or item.get("markdown") or item.get("html") or ""
         if url and len(text) > 50:
@@ -41,7 +41,7 @@ def crawl_website(start_url: str, max_pages: int = 5) -> Dict[str, str]:
         run_input["crawlerType"] = "playwright:firefox"
         run = client.actor("apify/website-content-crawler").call(run_input=run_input)
 
-        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+        for item in client.dataset(run.default_dataset_id).iterate_items():
             url = item.get("url")
             text = item.get("text") or item.get("markdown") or item.get("html") or ""
             if url and len(text) > 50:
