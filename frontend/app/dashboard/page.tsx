@@ -300,8 +300,8 @@ export default function DashboardPage() {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const chatUrl = `${origin}/chat/${botId}`;
     return {
-      iframe: `<iframe\n  src="${chatUrl}"\n  width="400"\n  height="600"\n  style="border:none; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.2);"\n  title="AI Chat"\n></iframe>`,
-      widget: `<script\n  src="${origin}/widget.js"\n  data-bot-id="${botId}"\n></script>`,
+      iframe: `<!-- CustomBot embed -->\n<div style="position:fixed; bottom:24px; right:24px; width:400px; height:580px; border-radius:16px; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.25); z-index:9999; border:1px solid rgba(0,0,0,0.1);">\n  <iframe\n    src="${chatUrl}"\n    width="100%"\n    height="100%"\n    style="border:none;"\n    title="AI Chat"\n  ></iframe>\n</div>`,
+      widget: `<!-- CustomBot floating bubble -->\n<script\n  src="${origin}/widget.js"\n  data-bot-id="${botId}"\n></script>`,
     };
   }
 
@@ -771,11 +771,11 @@ export default function DashboardPage() {
                 {/* Description */}
                 {embedTab === "iframe" ? (
                   <p className="text-xs text-gray-500">
-                    Paste this anywhere in your HTML to show the chat as a fixed-size box on the page.
+                    A fixed chat box pinned to the bottom-right of the page. Always visible — no toggle button. Paste anywhere in your HTML.
                   </p>
                 ) : (
                   <p className="text-xs text-gray-500">
-                    Paste this just before <code className="text-purple-400">&lt;/body&gt;</code> to add a floating chat bubble to the bottom-right corner of your website.
+                    A floating 💬 button at the bottom-right. Visitors click it to open/close the chat. Paste just before <code className="text-purple-400">&lt;/body&gt;</code>.
                   </p>
                 )}
 
@@ -851,6 +851,25 @@ export default function DashboardPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">Brand Logo</label>
+
+                    {editCurrentLogoUrl && !editLogoFile && (
+                      <div className="flex items-center gap-3 mb-2 p-3 bg-white/5 border border-white/10 rounded-xl">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={editCurrentLogoUrl} alt="Current logo" className="w-10 h-10 rounded-lg object-cover border border-white/10" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-400">Current logo</p>
+                          <p className="text-xs text-gray-600 truncate">{editCurrentLogoUrl.split("/").pop()}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setEditCurrentLogoUrl(null)}
+                          className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg hover:bg-red-500/10 transition flex-shrink-0"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+
                     <input
                       type="file"
                       accept="image/*"
@@ -861,9 +880,9 @@ export default function DashboardPage() {
                         setEditLogoPreviewUrl(file ? URL.createObjectURL(file) : null);
                       }}
                     />
-                    {editCurrentLogoUrl && !editLogoFile && (
-                      <p className="text-xs text-gray-500 mt-1">Current logo kept unless you upload a new one</p>
-                    )}
+                    <p className="text-xs text-gray-600 mt-1">
+                      {editCurrentLogoUrl || editLogoFile ? "Upload a new file to replace the current logo" : "Optional — upload a logo for your bot"}
+                    </p>
                   </div>
 
                   <ThemePicker selected={editSelectedTheme} onChange={setEditSelectedTheme} />
