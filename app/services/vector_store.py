@@ -3,6 +3,7 @@
 import os
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.http.exceptions import UnexpectedResponse
 from typing import List, Tuple
 import uuid
 from dotenv import load_dotenv
@@ -35,7 +36,11 @@ async def init_collection(bot_id: str, vector_size: int = 384):
     try:
         await client.get_collection(collection_name)
         print(f"Collection {collection_name} already exists")
-    except:
+    except UnexpectedResponse as e:
+        # Only treat a true 404 (collection not found) as "needs to be created"
+        # Any other status (wrong URL, auth error, etc.) should propagate
+        if e.status_code != 404:
+            raise
         await client.create_collection(
             collection_name=collection_name,
             vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE)
