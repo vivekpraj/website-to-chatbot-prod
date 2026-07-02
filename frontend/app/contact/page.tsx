@@ -1,20 +1,43 @@
 "use client";
 
 import { useState } from 'react';
-import { Bot, Mail, Send, CheckCircle } from 'lucide-react';
+import { Bot, Mail, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import emailjs from '@emailjs/browser';
+
+const EMAILJS_SERVICE_ID  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID  ?? '';
+const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID ?? '';
+const EMAILJS_PUBLIC_KEY  = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY  ?? '';
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    setSent(true);
+    setError('');
+
+    try {
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          from_name: form.name,
+          from_email: form.email,
+          message: form.message,
+        },
+        EMAILJS_PUBLIC_KEY,
+      );
+      setSent(true);
+    } catch (err) {
+      console.error('EmailJS error:', err);
+      setError('Failed to send message. Please email us directly.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -105,6 +128,13 @@ export default function ContactPage() {
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm resize-none"
               />
             </div>
+
+            {error && (
+              <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
