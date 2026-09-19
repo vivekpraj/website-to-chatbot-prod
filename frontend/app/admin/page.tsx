@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getToken, getUserRole } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/constants";
 import Link from "next/link";
-import { Bot, Users, MessageSquare, TrendingUp, Loader, ArrowLeft } from "lucide-react";
+import { Bot, Users, MessageSquare, TrendingUp, Loader, ArrowLeft, Activity, CheckCircle, XCircle } from "lucide-react";
 
 type Stats = {
   total_users: number;
@@ -12,10 +12,34 @@ type Stats = {
   total_messages: number;
 };
 
+type ServiceStatus = {
+  status: "healthy" | "degraded";
+  services: Record<string, string>;
+};
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [healthData, setHealthData] = useState<ServiceStatus | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  async function checkServices() {
+    setHealthLoading(true);
+    setHealthData(null);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_BASE_URL}/health`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setHealthData(data);
+    } catch {
+      setHealthData({ status: "degraded", services: { error: "FAIL: Could not reach backend" } });
+    } finally {
+      setHealthLoading(false);
+    }
+  }
 
   useEffect(() => {
     const role = getUserRole();
@@ -132,6 +156,72 @@ export default function AdminDashboardPage() {
               <p className="text-sm text-gray-400">View platform usage and trends</p>
             </div>
           </Link>
+        </div>
+
+        {/* Service Health Check */}
+        <div className="mt-12 bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Activity className="w-6 h-6 text-purple-400" />
+              <h2 className="text-xl font-bold">Service Health</h2>
+              {healthData && (
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  healthData.status === "healthy"
+                    ? "bg-green-500/20 text-green-400"
+                    : "bg-red-500/20 text-red-400"
+                }`}>
+                  {healthData.status}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={checkServices}
+              disabled={healthLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors"
+            >
+              {healthLoading ? (
+                <Loader className="w-4 h-4 animate-spin" />
+              ) : (
+                <Activity className="w-4 h-4" />
+              )}
+              {healthLoading ? "Checking..." : "Check Services"}
+            </button>
+          </div>
+
+          {!healthData && !healthLoading && (
+            <p className="text-gray-500 text-sm">Click &quot;Check Services&quot; to run a live health check on all external services.</p>
+          )}
+
+          {healthData && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Object.entries(healthData.services).map(([name, status]) => {
+                const ok = status === "ok";
+                const label = name.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+                return (
+                  <div
+                    key={name}
+                    className={`flex items-start gap-3 p-3 rounded-xl border ${
+                      ok
+                        ? "bg-green-500/10 border-green-500/20"
+                        : "bg-red-500/10 border-red-500/20"
+                    }`}
+                  >
+                    {ok ? (
+                      <CheckCircle className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    )}
+                    <div className="min-w-0">
+                      <p className={`text-sm font-medium ${ok ? "text-green-300" : "text-red-300"}`}>{label}</p>
+                      {!ok && (
+                        <p className="text-xs text-red-400/80 mt-0.5 break-all">{status.replace("FAIL: ", "")}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
     </div>

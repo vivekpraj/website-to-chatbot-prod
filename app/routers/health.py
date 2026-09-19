@@ -80,7 +80,7 @@ async def deep_health_check():
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
                 json={
-                    "model": "llama3-8b-8192",
+                    "model": "gemma2-9b-it",
                     "messages": [{"role": "user", "content": "hi"}],
                     "max_tokens": 1,
                 },
