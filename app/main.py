@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 from .db import Base, engine
 from app import models  # noqa: F401 — ensures models are registered before create_all
-from app.routers import bots, chat, auth, admin
+from app.routers import bots, chat, auth, admin, health
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,6 +42,7 @@ app.include_router(bots.router, prefix="/bots", tags=["Bots"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(admin.router, tags=["Admin"])
+app.include_router(health.router, tags=["Health"])
 
 
 @app.get("/")

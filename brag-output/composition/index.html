@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CustomBot — Brag Video</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1280px;
+    height: 720px;
+    background: #000;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    color: #fff;
+  }
+
+  #comp-root {
+    position: relative;
+    width: 1280px;
+    height: 720px;
+    background: #000;
+    overflow: hidden;
+  }
+
+  .clip {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .bg-gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 40%, rgba(168,85,247,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 70% 65%, rgba(249,115,22,0.14) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hook-line {
+    font-size: 72px;
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+    letter-spacing: -1px;
+    line-height: 1.1;
+  }
+  .hook-sub {
+    font-size: 64px;
+    font-weight: 900;
+    color: #d1d5db;
+    text-align: center;
+    letter-spacing: -1px;
+    margin-top: 12px;
+    opacity: 0;
+  }
+
+  .gradient-text {
+    background: linear-gradient(90deg, #a855f7, #f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .gradient-text-white {
+    background: linear-gradient(90deg, #fff, #e9d5ff, #fed7aa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .logo-mark {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, #a855f7, #f97316);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 40px rgba(168,85,247,0.5);
+    flex-shrink: 0;
+  }
+  .logo-mark svg { width: 40px; height: 40px; color: #fff; }
+  .logo-text {
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: -1px;
+  }
+  .logo-lockup {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    opacity: 0;
+  }
+
+  .hero-headline {
+    text-align: center;
+    margin-top: 24px;
+    opacity: 0;
+  }
+  .hero-line1, .hero-line2 {
+    font-size: 60px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    display: block;
+  }
+
+  .dashboard-card {
+    background: rgba(15,10,30,0.95);
+    border: 1px solid rgba(168,85,247,0.3);
+    border-radius: 24px;
+    padding: 40px 48px;
+    width: 640px;
+    box-shadow: 0 0 60px rgba(168,85,247,0.15);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #a855f7;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .url-input-wrap {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    font-size: 18px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+  }
+  .url-prefix { color: #9ca3af; }
+  .url-typed { color: #e5e7eb; }
+  .url-cursor {
+    width: 2px;
+    height: 20px;
+    background: #a855f7;
+    display: inline-block;
+    animation: blink 0.6s infinite;
+  }
+  .url-cursor.done { animation: none; opacity: 0; }
+
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  .step-list { display: flex; flex-direction: column; gap: 12px; }
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    font-size: 17px;
+    color: #d1d5db;
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  .step-item.step-ready {
+    background: rgba(34,197,94,0.1);
+    border-color: rgba(34,197,94,0.3);
+    color: #4ade80;
+    font-weight: 700;
+  }
+  .step-icon { font-size: 20px; width: 28px; text-align: center; }
+  .step-spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(168,85,247,0.3);
+    border-top-color: #a855f7;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .site-surface {
+    width: 900px;
+    height: 540px;
+    background: #0f0f1a;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  .site-topbar {
+    height: 44px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 8px;
+  }
+  .topbar-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .topbar-url {
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px;
+    height: 24px;
+    width: 260px;
+    margin-left: 12px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  .site-content { padding: 40px 48px; }
+  .site-content h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #e5e7eb;
+    margin-bottom: 12px;
+  }
+  .site-content p {
+    font-size: 15px;
+    color: #9ca3af;
+    line-height: 1.6;
+    max-width: 420px;
+  }
+  .chat-bubble-btn {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #a855f7, #f97316);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 24px rgba(168,85,247,0.5);
+    z-index: 10;
+  }
+  .chat-bubble-btn svg { width: 28px; height: 28px; color: #fff; }
+
+  .chat-panel {
+    position: absolute;
+    bottom: 96px;
+    right: 24px;
+    width: 360px;
+    height: 300px;
+    background: rgba(10,8,20,0.98);
+    border: 1px solid rgba(168,85,247,0.25);
+    border-radius: 20px;
+    box-shadow: 0 8px 48px rgba(168,85,247,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  .chat-header {
+    padding: 14px 18px;
+    background: linear-gradient(90deg, rgba(168,85,247,0.15), rgba(249,115,22,0.1));
+    border-bottom: 1px solid rgba(168,85,247,0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .chat-avatar {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #a855f7, #f97316);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .chat-header-name { font-size: 14px; font-weight: 700; color: #e5e7eb; }
+  .chat-header-status { font-size: 11px; color: #6ee7a0; }
+
+  .chat-messages {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+  }
+  .msg-user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 16px 16px 4px 16px;
+    font-size: 14px;
+    max-width: 80%;
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  .msg-bot {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #e5e7eb;
+    padding: 10px 14px;
+    border-radius: 16px 16px 16px 4px;
+    font-size: 14px;
+    max-width: 90%;
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .outro-wrap {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    z-index: 2;
+  }
+  .outro-tagline {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  .outro-sub {
+    font-size: 22px;
+    color: #9ca3af;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  .outro-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 40% 40% at 50% 50%, rgba(168,85,247,0.22) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+  }
+</style>
+</head>
+<body>
+
+<div id="comp-root"
+  data-composition-id="custombot-brag"
+  data-width="1280"
+  data-height="720"
+  data-duration="20">
+
+  <!-- Audio -->
+  <audio id="bg-music"
+    data-start="2.5" data-duration="17" data-track-index="10" data-volume="0.35"
+    src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3"></audio>
+  <audio id="sfx-step1" data-start="9.2"  data-duration="0.11" data-track-index="11" data-volume="0.65" src="assets/sfx/interface/drop_001.ogg"></audio>
+  <audio id="sfx-step2" data-start="10.1" data-duration="0.19" data-track-index="12" data-volume="0.65" src="assets/sfx/interface/drop_002.ogg"></audio>
+  <audio id="sfx-step3" data-start="11.0" data-duration="0.19" data-track-index="13" data-volume="0.65" src="assets/sfx/interface/drop_003.ogg"></audio>
+  <audio id="sfx-ready" data-start="12.2" data-duration="1.48" data-track-index="14" data-volume="0.80" src="assets/sfx/impact/impactBell_heavy_000.ogg"></audio>
+  <audio id="sfx-logo"  data-start="17.2" data-duration="0.19" data-track-index="15" data-volume="0.70" src="assets/sfx/impact/impactSoft_medium_001.ogg"></audio>
+
+  <!-- Scene 1: Hook -->
+  <div id="scene-hook" class="clip" data-start="0" data-duration="2.5">
+    <div style="text-align:center; padding: 0 80px;">
+      <div id="hook-line1" class="hook-line" style="opacity:0">Your website…</div>
+      <div id="hook-line2" class="hook-sub">…can't answer questions.</div>
+    </div>
+  </div>
+
+  <!-- Scene 2: Reveal -->
+  <div id="scene-reveal" class="clip" data-start="2.5" data-duration="3"
+    style="flex-direction:column; gap:32px;">
+    <div class="bg-gradient"></div>
+    <div id="logo-lockup" class="logo-lockup">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px;color:#fff">
+          <path d="M12 8V4H8"/>
+          <rect width="16" height="12" x="4" y="8" rx="2"/>
+          <path d="M2 14h2"/><path d="M20 14h2"/>
+          <path d="M15 13v2"/><path d="M9 13v2"/>
+        </svg>
+      </div>
+      <span class="logo-text gradient-text">CustomBot</span>
+    </div>
+    <div id="hero-headline" class="hero-headline">
+      <span class="hero-line1 gradient-text-white">TURN YOUR CONTENT</span>
+      <span class="hero-line2 gradient-text">INTO CONVERSATIONS.</span>
+    </div>
+  </div>
+
+  <!-- Scene 3: Pipeline -->
+  <div id="scene-pipeline" class="clip" data-start="5.5" data-duration="7">
+    <div class="bg-gradient"></div>
+    <div class="dashboard-card">
+      <div class="card-title">⚡ Create Your Bot</div>
+      <div class="url-input-wrap">
+        <span class="url-prefix">🌐</span>
+        <span id="url-text" class="url-typed"></span><span id="url-cursor" class="url-cursor"></span>
+      </div>
+      <div class="step-list">
+        <div id="step-crawl" class="step-item">
+          <div class="step-spinner"></div>
+          <span>🕷️ Crawling your website…</span>
+        </div>
+        <div id="step-embed" class="step-item">
+          <div class="step-spinner"></div>
+          <span>🧠 Reading and embedding…</span>
+        </div>
+        <div id="step-save" class="step-item">
+          <div class="step-spinner"></div>
+          <span>💾 Saving to knowledge base…</span>
+        </div>
+        <div id="step-ready" class="step-item step-ready">
+          <span class="step-icon">✅</span>
+          <span>READY — Your bot is live!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 4: Bot in the wild -->
+  <div id="scene-chat" class="clip" data-start="12.5" data-duration="4.5">
+    <div class="bg-gradient"></div>
+    <div class="site-surface">
+      <div class="site-topbar">
+        <div class="topbar-dot" style="background:#ff5f57"></div>
+        <div class="topbar-dot" style="background:#febc2e"></div>
+        <div class="topbar-dot" style="background:#28c840"></div>
+        <div class="topbar-url">yourwebsite.com</div>
+      </div>
+      <div class="site-content">
+        <h2>Welcome to Our Store</h2>
+        <p>Quality products, fast shipping, and excellent customer service. Serving customers since 2010.</p>
+      </div>
+      <div class="chat-bubble-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <div id="chat-panel" class="chat-panel">
+        <div class="chat-header">
+          <div class="chat-avatar">🤖</div>
+          <div>
+            <div class="chat-header-name">CustomBot</div>
+            <div class="chat-header-status">● Online — Ask me anything</div>
+          </div>
+        </div>
+        <div class="chat-messages">
+          <div id="msg-q" class="msg-user">Do you offer free shipping?</div>
+          <div id="msg-a" class="msg-bot">Yes! We offer free shipping on orders over $50. Standard delivery takes 3–5 days. 📦</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 5: Outro -->
+  <div id="scene-outro" class="clip" data-start="17" data-duration="3"
+    style="flex-direction:column;">
+    <div class="outro-glow"></div>
+    <div class="bg-gradient"></div>
+    <div class="outro-wrap">
+      <div id="outro-logo" class="logo-lockup">
+        <div class="logo-mark" style="box-shadow: 0 0 60px rgba(168,85,247,0.7);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px;color:#fff">
+            <path d="M12 8V4H8"/>
+            <rect width="16" height="12" x="4" y="8" rx="2"/>
+            <path d="M2 14h2"/><path d="M20 14h2"/>
+            <path d="M15 13v2"/><path d="M9 13v2"/>
+          </svg>
+        </div>
+        <span class="logo-text gradient-text">CustomBot</span>
+      </div>
+      <div id="outro-tagline" class="outro-tagline">Turn any website into a chatbot.</div>
+      <div id="outro-sub" class="outro-sub">Free to start.</div>
+    </div>
+  </div>
+
+</div><!-- end #comp-root -->
+
+<script>
+const tl = gsap.timeline({ paused: true });
+
+// Scene 1: Hook (0–2.5s)
+tl.set("#scene-hook", { opacity: 1 }, 0)
+  .to("#hook-line1", { opacity: 1, duration: 0.4 }, 0.3)
+  .to("#hook-line2", { opacity: 1, y: 0, duration: 0.4 }, 1.1)
+  .from("#hook-line2", { y: 16 }, 1.1)
+  .to("#scene-hook", { opacity: 0, duration: 0.25 }, 2.25);
+
+// Scene 2: Reveal (2.5–5.5s)
+tl.set("#scene-reveal", { opacity: 1 }, 2.5)
+  .to("#logo-lockup", { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 2.7)
+  .from("#logo-lockup", { scale: 0.88 }, 2.7)
+  .to("#hero-headline", { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 3.2)
+  .from("#hero-headline", { y: 20 }, 3.2)
+  .to("#scene-reveal", { opacity: 0, duration: 0.3 }, 5.2);
+
+// Scene 3: Pipeline (5.5–12.5s)
+tl.set("#scene-pipeline", { opacity: 1 }, 5.5);
+
+// URL typing via GSAP counter — no rAF
+const urlProxy = { chars: 0 };
+const urlFull = "yourwebsite.com";
+tl.to(urlProxy, {
+  chars: urlFull.length,
+  duration: 1.4,
+  ease: "none",
+  onUpdate: function() {
+    const el = document.getElementById("url-text");
+    if (el) el.textContent = urlFull.slice(0, Math.round(urlProxy.chars));
+  },
+  onComplete: function() {
+    const c = document.getElementById("url-cursor");
+    if (c) c.classList.add("done");
+  }
+}, 5.8);
+
+// Step reveals — beat-grid from 9.2s
+tl.to("#step-crawl", { opacity: 1, y: 0, duration: 0.35, ease: "back.out(1.6)" }, 9.2)   // beat-locked: 9.2s
+  .from("#step-crawl", { y: 8 }, 9.2)
+  .to("#step-embed",  { opacity: 1, y: 0, duration: 0.35, ease: "back.out(1.6)" }, 10.1)  // beat-grid: 10.1s
+  .from("#step-embed", { y: 8 }, 10.1)
+  .to("#step-save",   { opacity: 1, y: 0, duration: 0.35, ease: "back.out(1.6)" }, 11.0)  // beat-grid: 11.0s
+  .from("#step-save",  { y: 8 }, 11.0)
+  .to("#step-ready",  { opacity: 1, y: 0, duration: 0.45, ease: "elastic.out(1,0.5)" }, 12.2) // beat-locked: 12.2s
+  .from("#step-ready", { y: 8 }, 12.2)
+  .to("#scene-pipeline", { opacity: 0, duration: 0.3 }, 12.2);
+
+// Scene 4: Bot in the wild (12.5–17s)
+tl.set("#scene-chat", { opacity: 1 }, 12.5)
+  .to("#chat-panel", { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.4)" }, 12.9)
+  .to("#msg-q", { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 13.9)
+  .from("#msg-q", { y: 8 }, 13.9)
+  .to("#msg-a", { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 15.0)
+  .from("#msg-a", { y: 8 }, 15.0)
+  .to("#scene-chat", { opacity: 0, duration: 0.3 }, 16.7);
+
+// Scene 5: Outro (17–20s)
+tl.set("#scene-outro", { opacity: 1 }, 17.0)
+  .to("#outro-logo", { opacity: 1, scale: 1, duration: 0.5, ease: "elastic.out(1,0.5)" }, 17.2) // beat-locked: 17.2s
+  .from("#outro-logo", { scale: 0.78 }, 17.2)
+  .to("#outro-tagline", { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 17.9)
+  .from("#outro-tagline", { y: 12 }, 17.9)
+  .to("#outro-sub", { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 18.5)
+  .from("#outro-sub", { y: 12 }, 18.5)
+  .to("#comp-root", { opacity: 0, duration: 0.6 }, 19.4);
+
+// Register for Hyperframes
+window.__timelines = { "custombot-brag": tl };
+</script>
+
+</body>
+</html>
