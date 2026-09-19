@@ -32,8 +32,14 @@ export default function AdminDashboardPage() {
       const res = await fetch(`${API_BASE_URL}/health`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      setHealthData(data);
+      const raw = await res.json();
+      // backend used to return a tuple serialized as [data, statusCode]
+      const data = Array.isArray(raw) ? raw[0] : raw;
+      if (data && typeof data.services === "object") {
+        setHealthData(data);
+      } else {
+        setHealthData({ status: "degraded", services: { error: "FAIL: Unexpected response format" } });
+      }
     } catch {
       setHealthData({ status: "degraded", services: { error: "FAIL: Could not reach backend" } });
     } finally {
