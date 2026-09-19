@@ -3,6 +3,7 @@ import httpx
 import cloudinary
 import cloudinary.api
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from app.db import SessionLocal
 from app.services.vector_store import client as qdrant_client
@@ -102,5 +103,7 @@ async def deep_health_check():
         results["cloudinary"] = f"FAIL: {e}"
 
     all_ok = all(v == "ok" for v in results.values())
-    status_code = 200 if all_ok else 503
-    return {"status": "healthy" if all_ok else "degraded", "services": results}, status_code
+    return JSONResponse(
+        content={"status": "healthy" if all_ok else "degraded", "services": results},
+        status_code=200 if all_ok else 503,
+    )
