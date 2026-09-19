@@ -28,7 +28,7 @@ async def deep_health_check():
         await qdrant_client.get_collections()
         results["qdrant"] = "ok"
     except Exception as e:
-        results["qdrant"] = f"FAIL: {e}"
+        results["qdrant"] = f"FAIL: {repr(e)}"
 
     # HuggingFace — embed a single string
     try:
@@ -80,7 +80,7 @@ async def deep_health_check():
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
                 json={
-                    "model": "llama-3.1-8b-instant",
+                    "model": "llama3-8b-8192",
                     "messages": [{"role": "user", "content": "hi"}],
                     "max_tokens": 1,
                 },
